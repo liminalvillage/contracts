@@ -1,0 +1,17 @@
+type NewFlavor @entity(immutable: true) {
+  id: Bytes!
+  flavor: Bytes! # address
+  name: String! # string
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type NewHolon @entity(immutable: true) {
+  id: Bytes!
+  name: String! # string
+  addr: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

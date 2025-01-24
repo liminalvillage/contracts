@@ -1,0 +1,29 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Holons
+    network: mainnet
+    source:
+      address: "0x2ca60d89144D4cdf85dA87af4FE12aBF9265F28C"
+      abi: Holons
+      startBlock: 21688045
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - NewFlavor
+        - NewHolon
+      abis:
+        - name: Holons
+          file: Holons/Holons.json
+      eventHandlers:
+        - event: NewFlavor(indexed address,string)
+          handler: handleNewFlavor
+        - event: NewHolon(string,address)
+          handler: handleNewHolon
+      file: Holons/Holons.wasm
