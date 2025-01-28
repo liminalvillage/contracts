@@ -32,12 +32,27 @@ contract Managed is Holon {
     uint256 public totalappreciation;
     mapping(string => uint256) public appreciation; // appreciation received by a member based on UserID
 
+    // Used for deubgging
     // event LogClaimEther(string userId, address beneficiary, uint256 amount);
     // Used for debugging
     // event TokenBalanceUpdated(string indexed userId, address indexed tokenAddress, uint256 beforeBalance, uint256 afterBalance);
     // Used for debugging
-    event Step(string indexed step);
+    // event Step(string indexed step);
 
+    event RewardDistributed(
+        address indexed contractAddress,
+        uint256 amount,
+        uint256 totalMembers,
+        string rewardType
+    );
+
+    event MemberRewarded(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        bool isContract,
+        string rewardType
+    );
 
 
     constructor(address _creator, string memory _name) {
@@ -180,26 +195,20 @@ contract Managed is Holon {
         }
     }
     // reward function to reward all members through their user id
-    function reward(
-        address _tokenaddress,
-        uint256 _tokenamount
-    ) public payable override  {
+    function reward(address _tokenaddress, uint256 _tokenamount) public payable override {
         bool etherreward;
         IERC20 token;
 
         if (msg.value > 0 && _tokenaddress == address(0)) {
-            //ether reward
+            // Ether reward
             _tokenamount = msg.value;
             etherreward = true;
-            emit Step("1.1 Is ether based reward");
         } else {
-            //token reward
-            //Load ERC20 token information
+            // Token reward
+            // Load ERC20 token information
             token = IERC20(_tokenaddress);
-            // emit MemberRewarded(address(this), "`tokenbalance", token.balanceOf(address(this))); // TODO
-            emit Step("1.2 Is token based reward");
             require(
-                token.balanceOf(address(this))- totalDeposited[_tokenaddress] >= _tokenamount,
+                token.balanceOf(address(this)) - totalDeposited[_tokenaddress] >= _tokenamount,
                 "Not enough tokens in the contract"
             );
         }
@@ -207,57 +216,84 @@ contract Managed is Holon {
         uint256 amount;
 
         for (uint256 i = 0; i < userIds.length; i++) {
-            if (totalappreciation > 0){
-                // if any appreciation was shared
-                amount = (appreciation[userIds[i]] * _tokenamount) / totalappreciation; //multiply given appreciation with unit reward
-                emit Step("2.1 Any appreciation shared");
+            if (totalappreciation > 0) {
+                // If any appreciation was shared
+                amount = (appreciation[userIds[i]] * _tokenamount) / totalappreciation; // Multiply given appreciation with unit reward
+            } else {
+                // Else use blanket unit reward value
+                amount = _tokenamount / userIds.length;
             }
-            else{
-                amount = _tokenamount / userIds.length; //else use blanket unit reward value.
-                emit Step("2.2 None appreciation is shared");
-            }
+
             if (amount > 0) {
-                emit Step("3.1 Amount is > 0");
-                if (etherreward) { //ETHER CASE
-                emit Step("3.2 It's ether reward");
+                address recipient = userIdToAddress[userIds[i]];
+                bool isContract = recipient.code.length > 0; // Check if the recipient is a contract
+
+                if (etherreward) { // Ether case
                     if (hasClaimed[userIds[i]]) {
-                        emit Step("3.3 User has already claimed, so we are sending the ether directly to it's address");
-                        (bool success, ) = payable(userIdToAddress[userIds[i]])
-                            .call{value: amount}("");
+                        (bool success, ) = payable(recipient).call{value: amount}("");
                         require(success, "Transfer failed");
+
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ETH"
+                        );
                     } else {
-                        emit Step("3.4 User hasn't claimed before, so we are storing the ether in token balance structure");
-                        this.depositEtherForUser(userIds[i], amount); //userIds[i].call{value: amount}("");
-                        // emit MemberRewarded(address(0), "STOREDETH", amount); // TODO
+                        this.depositEtherForUser(userIds[i], amount);
+
+                        emit MemberRewarded(
+                            address(this),
+                            address(0),
+                            amount,
+                            isContract,
+                            "STORED_ETH"
+                        );
                     }
-                } else { //  ERC20 CASE
-                    emit Step("3.4 It's token reward");
+                } else { // ERC20 case
                     if (hasClaimed[userIds[i]]) {
-                        emit Step("3.5 User has already claimed, so we are sending the tokens directly to it's address");
-                        token.transfer(userIdToAddress[userIds[i]], amount);
-                        (bool success, ) = userIdToAddress[userIds[i]].call(
+                        token.transfer(recipient, amount);
+                        (bool success, ) = recipient.call(
                             abi.encodeWithSignature(
                                 "reward(address,uint256)",
                                 _tokenaddress,
                                 amount
                             )
                         );
-                        require(success, "Unable to call the reward function" );
-                        // emit MemberRewarded(userIdToAddress[userIds[i]],"ERC20",amount); // TODO
-                    } else{
-                        emit Step("3.6 User hasn't claimed before, so we are storing the tokens in token balance structure");
-                        this.depositTokenForUser(
-                            userIds[i],
-                            _tokenaddress,
-                            amount
+                        require(success, "Unable to call the reward function");
+
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ERC20"
                         );
-                        // emit MemberRewarded(address(0), "STOREDERC20", amount); // TODO
+                    } else {
+                        this.depositTokenForUser(userIds[i], _tokenaddress, amount);
+
+                        emit MemberRewarded(
+                            address(this),
+                            address(0),
+                            amount,
+                            isContract,
+                            "STORED_ERC20"
+                        );
                     }
                 }
             }
         }
-        // emit HolonRewarded(address(this), "ERC20", _tokenamount); // TODO
+
+        emit RewardDistributed(
+            address(this),
+            _tokenamount,
+            userIds.length,
+            etherreward ? "ETH" : "ERC20"
+        );
     }
+
+
     function getTokensOf(string memory _userId) public view returns (address[] memory) {
         return tokensOf[_userId];
     }
