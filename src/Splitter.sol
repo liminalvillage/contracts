@@ -71,9 +71,18 @@ contract Splitter is Holon {
                 amount = (percentages[_members[i]] * _tokenamount) / 100; //multiply given appreciation with unit reward
 
             if (amount > 0 ){
+                address recipient = _members[i];
+                bool isContract = recipient.code.length > 0; // Check if the recipient is a contract
                 if (etherreward){
                     (bool success, ) = _members[i].call{value: amount}("");
                     require(success, "Transfer failed");
+                    emit MemberRewarded(
+                        address(this),
+                        recipient,
+                        amount,
+                        isContract,
+                        "ETH"
+                    );
                 }
                 else {
                     token.transfer(_members[i],amount);
@@ -81,11 +90,23 @@ contract Splitter is Holon {
                     abi.encodeWithSignature("reward(address,uint256)", _tokenaddress, amount)
                     );
                     require(success, "Unable to call the reward function" );
+                    emit MemberRewarded(
+                        address(this),
+                        recipient,
+                        amount,
+                        isContract,
+                        "ERC20"
+                    );
                 }
-                // emit MemberRewarded(_members[i], "ERC20", amount); //TODO
             }
         }
-       // emit HolonRewarded(address(this), "ERC20", _tokenamount);TODO
+        // Emit a summary event after processing all members
+        emit RewardDistributed(
+            address(this),
+            _tokenamount,
+            _members.length,
+            etherreward ? "ETH" : "ERC20"
+        );
     }
    
 

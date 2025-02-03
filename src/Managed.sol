@@ -32,12 +32,6 @@ contract Managed is Holon {
     uint256 public totalappreciation;
     mapping(string => uint256) public appreciation; // appreciation received by a member based on UserID
 
-    // Used for deubgging
-    // event LogClaimEther(string userId, address beneficiary, uint256 amount);
-    // Used for debugging
-    // event TokenBalanceUpdated(string indexed userId, address indexed tokenAddress, uint256 beforeBalance, uint256 afterBalance);
-    // Used for debugging
-    // event Step(string indexed step);
 
     event RewardDistributed(
         address indexed contractAddress,
@@ -129,19 +123,8 @@ contract Managed is Holon {
         
         // Debugging purposes;
         uint256 beforeBalance = tokenBalance[_userId][_tokenAddress];
-        // emit TokenBalanceUpdated(
-        //     _userId,
-        //     _tokenAddress,
-        //     beforeBalance,
-        //     beforeBalance + _amount
-        // );
+ 
         tokenBalance[_userId][_tokenAddress] += _amount;
-        // emit TokenBalanceUpdated(
-        //     _userId,
-        //     _tokenAddress,
-        //     beforeBalance,
-        //     beforeBalance + _amount
-        // );
         tokensOf[_userId].push(_tokenAddress);
         totalDeposited[_tokenAddress] += _amount;
     }

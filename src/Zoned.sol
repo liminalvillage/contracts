@@ -77,7 +77,9 @@ import "./Holon.sol";
             require (token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
         }
         
-        uint256  amount;
+        uint256 amount;
+        uint256 totalMembersRewarded = 0; // Counter for all rewarded members
+
         for (uint256 z = 1;  z <= nzones; z++) { //skip zone 0 as unassigned members
             if (zonemembers[z].length > 0) {
                 amount = rewardFunction(z, _tokenamount) / zonemembers[z].length; // divide reward equally for all members in the same zone
@@ -89,9 +91,19 @@ import "./Holon.sol";
             //         amount = _tokenamount / _members.length ; //else use blanket unit reward value.
 
                     if (amount > 0 ){
+                        address recipient = zonemembers[z][i];
+                        bool isContract = recipient.code.length > 0;
+
                         if (etherreward){
                             (bool success, ) = zonemembers[z][i].call{value: amount}("");
                             require(success, "Transfer failed");
+                            emit MemberRewarded(
+                                address(this),
+                                recipient,
+                                amount,
+                                isContract,
+                                "ETH"
+                            );
                         }
                         else {
                             token.transfer(zonemembers[z][i],amount);
@@ -99,13 +111,25 @@ import "./Holon.sol";
                             abi.encodeWithSignature("reward(address,uint256)", _tokenaddress, amount)
                             );
                             require(success, "Unable to call the reward function" );
+                            emit MemberRewarded(
+                                address(this),
+                                recipient,
+                                amount,
+                                isContract,
+                                "ERC20"
+                            );
                         }
-                        // emit MemberRewarded(zonemembers[z][i], "ERC20", amount); 
+                        totalMembersRewarded++;
                     }
                 }
-        // emit HolonRewarded(address(this), "ERC20", _tokenamount);TODO
             }
         }
+        emit RewardDistributed(
+            address(this),
+            _tokenamount,
+            totalMembersRewarded,
+            etherreward ? "ETH" : "ERC20"
+        );
     }
     
 
