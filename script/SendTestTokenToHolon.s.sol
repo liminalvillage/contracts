@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
-import "../src/Holons.sol"; // Adjust the path based on your directory structure
+import "../src/Holons.sol";
 import "../src/TestToken.sol";
 
 contract SendTestTokenToHolon is Script {
@@ -18,11 +18,11 @@ contract SendTestTokenToHolon is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Address of the deployed Holons contract
-        address holonsContractAddress = 0xf4fa0d1C10c47cDe9F65D56c3eC977CbEb13449A;
+        address holonsContractAddress = 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707; // Replace with your actual address
         require(holonsContractAddress != address(0), "Invalid Holons contract address");
 
         // Address of the deployed TestToken contract
-        address testTokenAddress = 0xf975A646FCa589Be9fc4E0C28ea426A75645fB1f; // Replace with actual address
+        address testTokenAddress = 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6; // Replace with your actual address
         require(testTokenAddress != address(0), "Invalid TestToken contract address");
 
         // Initialize the Holons contract
