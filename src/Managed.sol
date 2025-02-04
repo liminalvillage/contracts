@@ -32,23 +32,6 @@ contract Managed is Holon {
     uint256 public totalappreciation;
     mapping(string => uint256) public appreciation; // appreciation received by a member based on UserID
 
-
-    event RewardDistributed(
-        address indexed contractAddress,
-        uint256 amount,
-        uint256 totalMembers,
-        string rewardType
-    );
-
-    event MemberRewarded(
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        bool isContract,
-        string rewardType
-    );
-
-
     constructor(address _creator, string memory _name) {
         name = _name;
         creator = _creator;

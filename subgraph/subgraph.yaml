@@ -33,7 +33,7 @@ templates:
     kind: ethereum/contract
     network: mainnet
     source:
-      abi: Managed
+      abi: Holon
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -44,8 +44,8 @@ templates:
         - RewardDistribution
         - MemberReward       
       abis:
-        - name: Managed
-          file: ./abis/Managed.json
+        - name: Holon
+          file: ./abis/Holon.json
       eventHandlers:
         - event: RewardDistributed(indexed address,uint256,uint256,string)
           handler: handleRewardDistributed
