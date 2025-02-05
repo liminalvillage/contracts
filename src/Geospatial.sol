@@ -141,13 +141,29 @@ contract Geospatial is Holon{
                 amount = _tokenamount / hexs.length; //else use blanket unit reward value.
 
             if (amount > 0 ){
+                address recipient = hexToAddress[hexs[i]];
+                bool isContract = recipient.code.length > 0;
                 if (etherreward){
                     if (hasClaimed[hexs[i]]) {
                         (bool success, ) = hexToAddress[hexs[i]].call{value: amount}("");
                         require(success, "Transfer failed");
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ETH"
+                        );
                     }
                     else
-                     this.depositEtherForUser(hexs[i], amount);//hexs[i].call{value: amount}("");
+                    this.depositEtherForUser(hexs[i], amount);//hexs[i].call{value: amount}("");
+                    emit MemberRewarded(
+                        address(this),
+                        recipient,
+                        amount,
+                        isContract,
+                        "STORED_ETH"
+                    );
                 }
                 else {
                     if(hasClaimed[hexs[i]]){
@@ -156,14 +172,25 @@ contract Geospatial is Holon{
                         abi.encodeWithSignature("reward(address,uint256)", _tokenaddress, amount)
                         );
                         //require(success, "Unable to call the reward function" );
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ERC20"
+                        );
                     }
                     else
                         this.depositTokenForUser (hexs[i], _tokenaddress,amount);
                 }
-                 //emit MemberRewarded(hexs[i], "ERC20", amount); 
             }
         }
-       // emit HolonRewarded(address(this), "ERC20", _tokenamount);TODO
+           emit RewardDistributed(
+            address(this),
+            _tokenamount,
+            hexs.length,
+            etherreward ? "ETH" : "ERC20"
+        );
     }
 
      //claim both ether and tokens

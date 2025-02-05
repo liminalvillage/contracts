@@ -102,7 +102,7 @@ contract Membrane {
    
     }
     
-     /// @dev Changes the name of the member
+    /// @dev Changes the name of the member
     /// @notice only the lead can call this function
     /// @param _address The address of the member
     /// @param _name The new name of the member

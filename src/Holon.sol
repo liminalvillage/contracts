@@ -29,9 +29,20 @@ contract Holon is Membrane{
     address public creator;                  //Link to the holonic parent
 
     //======================== Events
-    event HolonRewarded (address holon, string token, uint256 amount);    
-    // event MemberRewarded (address member,string token, uint256 amount);
-    event RewardFailed(address indexed member, address token, uint256 amount);
+    event RewardDistributed(
+        address indexed contractAddress,
+        uint256 amount,
+        uint256 totalMembers,
+        string rewardType
+    );
+
+    event MemberRewarded(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        bool isContract,
+        string rewardType
+    );
 
     /// @notice Constructor to create an holon
     ///  created the Holon contract, the factory needs to be deployed first
@@ -158,12 +169,28 @@ contract Holon is Membrane{
         uint256 amountPerMember = _etherAmount / _members.length;
         require(amountPerMember > 0, "Insufficient amount for distribution");
 
+        uint256 totalMembersRewarded = 0;
         for (uint256 i = 0; i < _members.length; i++) {
+            address recipient = _members[i];
+            bool isContract = recipient.code.length > 0; 
             (bool success, ) = _members[i].call{value: amountPerMember}("");
             require(success, "Ether transfer failed");
+            // Emit an event for each member rewarded
+            emit MemberRewarded(
+                address(this),
+                recipient,
+                amountPerMember,
+                isContract,
+                "ETH"
+            );
+            totalMembersRewarded++;
         }
-
-        emit HolonRewarded(address(this), "ETHER", _etherAmount);
+        emit RewardDistributed(
+            address(this),
+            _etherAmount,
+            totalMembersRewarded,
+            "ETH"
+        );
     }
 
     function distributeERC20(address _tokenAddress, uint256 _tokenAmount) private {
@@ -172,11 +199,26 @@ contract Holon is Membrane{
 
         uint256 amountPerMember = _tokenAmount / _members.length;
         require(amountPerMember > 0, "Insufficient amount for distribution");
+        uint256 totalMembersRewarded = 0;
 
         for (uint256 i = 0; i < _members.length; i++) {
+            address recipient = _members[i];
+            bool isContract = recipient.code.length > 0;
             require(token.transfer(_members[i], amountPerMember), "ERC20 transfer failed");
+            emit MemberRewarded(
+                address(this),
+                recipient,
+                amountPerMember,
+                isContract,
+                "ERC20"
+            );
+            totalMembersRewarded++;
         }
-
-        emit HolonRewarded(address(this), "ERC20", _tokenAmount);
+        emit RewardDistributed(
+            address(this),
+            _tokenAmount,
+            totalMembersRewarded,
+            "ERC20"
+        );
     }
 }

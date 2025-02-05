@@ -1,0 +1,52 @@
+type NewFlavor @entity(immutable: true) {
+  id: Bytes!
+  flavor: Bytes! # address
+  name: String! # string
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type NewHolon @entity(immutable: true) {
+  id: Bytes!
+  name: String! # string
+  addr: Bytes! # address
+  flavor: String! # string
+  creator: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type HolonContract @entity {
+  id: Bytes!
+  name: String!
+  creator: Bytes!
+  createdAt: BigInt!
+  rewardDistributions: [RewardDistribution!]! @derivedFrom(field: "holon")
+}
+
+type RewardDistribution @entity(immutable: true) {
+  id: Bytes!
+  holon: HolonContract!
+  contractAddress: Bytes!
+  amount: BigInt!
+  totalMembers: BigInt!
+  rewardType: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MemberReward @entity(immutable: true) {
+  id: Bytes!
+  holon: HolonContract!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  isContract: Boolean!
+  rewardType: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
