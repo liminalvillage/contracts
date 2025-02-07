@@ -120,8 +120,8 @@ contract Managed is Holon {
         } else {
             // require(userIdToAddress[_userId] == _beneficiary, "Unauthorized");
         }
-         claimEther(_userId, _beneficiary);
-         claimTokens(_userId, _beneficiary);
+        claimEther(_userId, _beneficiary);
+        claimTokens(_userId, _beneficiary);
         hasClaimed[_userId] = true;
     }
 
@@ -134,7 +134,6 @@ contract Managed is Holon {
         uint256 amount = etherBalance[_userId];
         require(_beneficiary != address(0), "Invalid beneficiary address");
 
-        // emit LogClaimEther(_userId, _beneficiary, amount);
         if (amount > 0 ) {
             (bool sent, bytes memory data) = _beneficiary.call{value: amount}("");
             require(sent, "Claiming Ether failed");
