@@ -25,6 +25,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  */
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "v3-core/contracts/libraries/FullMath.sol";
 
 contract Geospatial is Holon{
     string[] public hexs; // list of hexs
@@ -35,8 +36,9 @@ contract Geospatial is Holon{
     mapping (string => mapping(address => uint256)) public tokenBalance; // storage for ERC20 by hex
     mapping (string => address[]) public tokensOf; // list of received tokens for a specific hex
     
-    uint256 public totalappreciation;               
+    uint256 public totalappreciation;
     mapping (string => uint256) public appreciation; // appreciation received by a member based on hex
+    uint256 public maxAppreciation = 1e30; // appreciation has to be capped, and potentionaly dynamically changed so we can evade 0x11 arithmethic overflows
 
     constructor(address _creator, string memory _name) {
         name = _name;
@@ -59,6 +61,8 @@ contract Geospatial is Holon{
     // Only the creator can set appreciation for members
     function setUserAppreciation(string calldata _hex, uint256 _appreciationAmount) external {
         require(msg.sender == creator, "Only creator can set appreciation");
+        // Check that the new value is within the allowed cap.
+        require(_appreciationAmount <= maxAppreciation, "Appreciation value too high");
         totalappreciation -= appreciation[_hex]; //subtract old appreciation
         appreciation[_hex] = _appreciationAmount;
         totalappreciation += _appreciationAmount;
@@ -71,6 +75,13 @@ contract Geospatial is Holon{
         require(_hexs.length == _appreciationAmounts.length, "Array lengths do not match");
         require(_hexs.length == hexs.length, "You must set appreciation for all users at once");
         totalappreciation = 0; //reset total appreciation
+
+        // Pre-check loops to revert at the beggining, not in the middle of execution
+        for (uint i = 0; i < _appreciationAmounts.length; i++) {
+            if (_appreciationAmounts[i] > maxAppreciation) {
+                require(_appreciationAmounts[i] <= maxAppreciation, "Appreciation value too high");
+            }
+        }
         for (uint i = 0; i < _hexs.length; i++) {
             appreciation[_hexs[i]] = _appreciationAmounts[i];
             totalappreciation += _appreciationAmounts[i];
@@ -136,7 +147,8 @@ contract Geospatial is Holon{
 
         for (uint256 i = 0; i < hexs.length; i++) {
                 if (totalappreciation > 0 ) // if any appreciation was shared
-                    amount = (appreciation[hexs[i]] *  _tokenamount) / totalappreciation; //multiply given appreciation with unit reward
+                    // amount = (appreciation[hexs[i]] *  _tokenamount) / totalappreciation; //multiply given appreciation with unit reward
+                    amount = FullMath.mulDiv(appreciation[hexs[i]], _tokenamount, totalappreciation);
                 else
                 amount = _tokenamount / hexs.length; //else use blanket unit reward value.
 
