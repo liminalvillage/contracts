@@ -24,7 +24,7 @@ contract Appreciative is Holon {
     //======================== Structures for tracking appreciation
     uint256 public totalappreciation;               // max amount of appreciation in this holon
     mapping (address => uint256) public appreciation; //appreciaton received by a member
-    mapping (address => uint8) public remainingappreciation; //appreciation left to give (max=100)
+    mapping (address => uint256) public remainingappreciation; //appreciation left to give (max=100)
 
     constructor (address _creator, string  memory _name)
     {
@@ -86,7 +86,7 @@ contract Appreciative is Holon {
          }
     }
 
-   /// @dev Resets appreciation of the caller
+    /// @dev Resets appreciation of the caller
     /// @notice This is the only way to change already assigned appreciation
     function resetAppreciation()
         external

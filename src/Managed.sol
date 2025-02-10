@@ -2,6 +2,7 @@
 pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "v3-core/contracts/libraries/FullMath.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -31,6 +32,8 @@ contract Managed is Holon {
     mapping(address => uint256) public totalDeposited; // total amount of tokens deposited in the contract
     uint256 public totalappreciation;
     mapping(string => uint256) public appreciation; // appreciation received by a member based on UserID
+    uint256 public maxAppreciation = 1e30; // appreciation has to be capped, and potentionaly dynamically changed so we can evade 0x11 arithmethic overflows
+
 
     constructor(address _creator, string memory _name) {
         name = _name;
@@ -67,6 +70,8 @@ contract Managed is Holon {
         uint256 _appreciationAmount
     ) external {
         require(msg.sender == creator, "Only creator can set appreciation");
+        // Check that the new value is within the allowed cap.
+        require(_appreciationAmount <= maxAppreciation, "Appreciation value too high");
         appreciation[_userId] = _appreciationAmount;
         totalappreciation += _appreciationAmount;
     }
@@ -81,6 +86,12 @@ contract Managed is Holon {
             _userIds.length == _appreciationAmounts.length,
             "Array lengths do not match"
         );
+        // Pre-check loops to revert at the beggining, not in the middle of execution
+        for (uint i = 0; i < _appreciationAmounts.length; i++) {
+            if (_appreciationAmounts[i] > maxAppreciation) {
+                require(_appreciationAmounts[i] <= maxAppreciation, "Appreciation value too high");
+            }
+        }
         for (uint i = 0; i < _userIds.length; i++) {
             appreciation[_userIds[i]] = _appreciationAmounts[i];
             totalappreciation += _appreciationAmounts[i];
@@ -183,7 +194,9 @@ contract Managed is Holon {
         for (uint256 i = 0; i < userIds.length; i++) {
             if (totalappreciation > 0) {
                 // If any appreciation was shared
-                amount = (appreciation[userIds[i]] * _tokenamount) / totalappreciation; // Multiply given appreciation with unit reward
+                // amount = (appreciation[userIds[i]] * _tokenamount) / totalappreciation; // Multiply given appreciation with unit reward
+                // ^ was before
+                amount = FullMath.mulDiv(appreciation[userIds[i]], _tokenamount, totalappreciation);
             } else {
                 // Else use blanket unit reward value
                 amount = _tokenamount / userIds.length;
