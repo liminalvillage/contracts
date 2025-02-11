@@ -32,7 +32,7 @@ import "./Holon.sol";
     uint public nzones;
     
     mapping (uint => address[]) public zonemembers;
-    mapping  (address => uint) public zone ;
+    mapping  (address => uint) public zone;
 
     /// @notice Constructor to create an holon
     ///  created the Holon contract, the factory needs to be deployed first
@@ -141,20 +141,23 @@ import "./Holon.sol";
         rewards = calculateRewards();
     }
 
-            // Function to calculate base rewards for zones 1 to 6
+    // Function to calculate base rewards for zones 1 to 6
     function calculateRewards() public view returns (uint256[] memory) {
-        uint256[] memory rewards = new uint256[](6);
+        uint256[] memory _zoneRewards = new uint256[](nzones + 1); // Allocate extra space
+
         uint256 total = 0;
-        for (uint256 zone = 1; zone <= nzones; ++zone) {
-            rewards[zone] = a * zone * zone + b * zone + c;
-            total += rewards[zone];
+        for (uint256 zoneCounter = 1; zoneCounter <= nzones; ++zoneCounter) {
+            _zoneRewards[zoneCounter] = a * zoneCounter * zoneCounter + b * zoneCounter + c;
+            total += _zoneRewards[zoneCounter];
         }
-        // Function to normalize rewards to sum to 100%
-        for (uint256 i = 0; i < rewards.length; i++) {
+        // Ensure that the total weight is nonzero to avoid division by zero.
+         require(total > 0, "Reward parameters yield zero total");
+        // Function to normalize _zoneRewards to sum to 100%
+        for (uint256 i = 0; i < _zoneRewards.length; i++) {
             // Multiply by 10000 for scaling to maintain precision
-            rewards[i] = rewards[i] * 10000 / total;
+            _zoneRewards[i] = _zoneRewards[i] * 10000 / total;
         }
-        return rewards;
+        return _zoneRewards;
     }
     
 
