@@ -151,7 +151,7 @@ import "./Holon.sol";
             total += _zoneRewards[zoneCounter];
         }
         // Ensure that the total weight is nonzero to avoid division by zero.
-         require(total > 0, "Reward parameters yield zero total");
+        require(total > 0, "Reward parameters yield zero total");
         // Function to normalize _zoneRewards to sum to 100%
         for (uint256 i = 0; i < _zoneRewards.length; i++) {
             // Multiply by 10000 for scaling to maintain precision

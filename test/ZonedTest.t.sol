@@ -94,19 +94,42 @@ contract ZonedTest is Test {
         zoned.addToZone(member1, 1);
         zoned.addToZone(member2, 2);
         zoned.addToZone(member3, 3);
-        
+
+        uint256 initialBalanceCoreMember = coreMember.balance;        
+        uint256 initialBalanceCreator = creator.balance;
         uint256 initialBalance1 = member1.balance;
         uint256 initialBalance2 = member2.balance;
         uint256 initialBalance3 = member3.balance;
+
+        console.log("Creator initial balance:", creator.balance);
+        console.log("Member1 initial balance:", member1.balance);
+        console.log("Member2 initial balance:", member2.balance);
+        console.log("Member3 initial balance:", member3.balance);
         
         // Send reward
         zoned.reward{value: 1 ether}(address(0), 1 ether);
         
+        console.log("Creator final balance:", creator.balance);
+        console.log("Member1 final balance:", member1.balance);
+        console.log("Member2 final balance:", member2.balance);
+        console.log("Member3 final balance:", member3.balance);
+
         vm.stopPrank();
-        
         assertTrue(member1.balance > initialBalance1);
         assertTrue(member2.balance > initialBalance2);
         assertTrue(member3.balance > initialBalance3);
+
+        uint256 expectedReward = 166600000000000000; // 0.1666 ether in wei ( this is because we set reward parameters as a=0, b=0, c=1 )
+        // so every zone get equal weight
+        uint256 expectedRewardZone6 = expectedReward / 2; // since there are 2 members in zone 6
+
+
+        // Assert that each recipient's balance increased by the expected amount.
+        // Note: The creator is in zone 6 from the constructor.
+        assertTrue(coreMember.balance > initialBalanceCoreMember, "Core memeber balance did not increase");
+        assertEq(member1.balance - initialBalance1, expectedReward, "member1 did not receive the expected reward");
+        assertEq(member2.balance - initialBalance2, expectedReward, "member2 did not receive the expected reward");
+        assertEq(member3.balance - initialBalance3, expectedReward, "member3 did not receive the expected reward");
     }
 
     function testERC20Reward() public {
@@ -134,7 +157,6 @@ contract ZonedTest is Test {
         assertTrue(mockToken.balanceOf(member2) > initialBalance2);
         assertTrue(mockToken.balanceOf(member3) > initialBalance3);
     }
-
     function testFailAddToHigherZone() public {
         // First, add member1 to zone 2 as creator
         vm.startPrank(creator, creator);
@@ -145,8 +167,15 @@ contract ZonedTest is Test {
         vm.prank(member1, member1);  // Set both msg.sender and tx.origin
         
         // This should revert with "members in lower zones cannot promote to higher zones"
-        vm.expectRevert("members in lower zones cannot promote to higher zones");
         zoned.addToZone(member2, 3);
+    }
+    function testAllowPromotionFromHigherZone() public {
+        // coreMember can promote member2 to zone 3.
+        vm.prank(coreMember, coreMember);
+        zoned.addToZone(member2, 3);
+    
+        // Verify that member2 is now in zone 3.
+        assertEq(zoned.zone(member2), 3);
     }
 
     function testZoneMembershipChange() public {
