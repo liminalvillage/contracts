@@ -35,7 +35,8 @@ contract AppreciativeFactory {
         if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
            return toAddress[_name];
 
-        Appreciative newholon = new Appreciative(address(this), _name); //create an holon
+        Appreciative newholon = new Appreciative(msg.sender, _name); //create an holon
+        // Appreciative newholon = new Appreciative(address(this), _name);
         address addr = address(newholon);
         holons[address(0)].push(addr); //add to the global holon list
         holons[msg.sender].push(addr); // add it to the local holon list

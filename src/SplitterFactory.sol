@@ -36,6 +36,8 @@ contract SplitterFactory {
            return toAddress[_name];
 
         Splitter newholon = new Splitter(msg.sender, _name, _parameter); //create an holon
+        // ^ Was before, but then deployer could not add members
+        // Splitter newholon = new Splitter(address(this), _name, _parameter); //create an holon
         address addr = address(newholon);
         holons[address(0)].push(addr); //add to the global holon list
         holons[msg.sender].push(addr); // add it to the local holon list

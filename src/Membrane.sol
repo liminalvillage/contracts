@@ -16,6 +16,9 @@ pragma solidity ^0.8;
     Peer Production License for more details.
  */
 
+import "forge-std/console.sol";
+
+
 contract Membrane {
 
 
@@ -47,6 +50,7 @@ contract Membrane {
     function addMember(address  _memberaddress, string memory _membername) virtual
         public
     {
+        // Log the caller and the owner for debugging.
         require((isMember[msg.sender] == true || owner == msg.sender), "Request submitted by a non-member address");
         require(isMember[_memberaddress] == false, "Member already added");
         require(toAddress[_membername] == address(0), "Name is already taken");
@@ -60,15 +64,17 @@ contract Membrane {
 
         bool success;
         bytes memory data;
-        (success, data) = _memberaddress.staticcall(
-            abi.encodeWithSignature("addParent(address)", address(this))
-        );
+        
+        // (success, data) = _memberaddress.staticcall(
+        //     abi.encodeWithSignature("addParent(address)", address(this))
+        // );
 
-        if (success) {
-            (success,) = _memberaddress.call(
-                    abi.encodeWithSignature("addParent(address)", address(this))
-                    );
-            require (success, "Failed to create parent");
+        // if (success) {
+        if (_memberaddress.code.length > 0) {
+            (bool success, ) = _memberaddress.call(
+                abi.encodeWithSignature("addParent(address)", address(this))
+            );
+            require(success, "Failed to create parent");
         }
        
         emit AddedMember(_memberaddress, _membername);

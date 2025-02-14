@@ -20,6 +20,7 @@ pragma solidity ^0.8;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "forge-std/console.sol";
 
  contract Zoned is Holon{
 
@@ -42,10 +43,19 @@ import "./Holon.sol";
         name = _name;
         creator = _creator;
         flavor = "Zoned";
-
         nzones = _nzones;
-        zone[tx.origin]= _nzones;
-        zonemembers[_nzones].push(tx.origin);
+        
+        // Try both and log results
+        zone[_creator] = _nzones;
+        zonemembers[_nzones].push(_creator);
+        // zone[tx.origin]= _nzones;
+        // zone[msg.sender]= _nzones;
+        // zone[_creator] = _nzones;
+        // zonemembers[_nzones].push(tx.origin);
+        // zonemembers[_nzones].push(msg.sender);
+        // zonemembers[_nzones].push(creator);
+        owner = _creator; // we explicitly set it to understand if this causes an issues
+
         a = 0;
         b = 0;
         c = 1;
@@ -134,7 +144,8 @@ import "./Holon.sol";
     
 
     function setRewardFunction(uint _a, uint _b, uint _c) public {
-        require (zone[tx.origin] == nzones, "only core members can change the reward function");
+        // require (zone[tx.origin] == nzones, "only core members can change the reward function");
+        require (zone[creator] == nzones, "only core members can change the reward function");
         a = _a;
         b = _b;
         c = _c;
@@ -192,4 +203,9 @@ import "./Holon.sol";
         zone[_memberaddress]= _zone;
         zonemembers[_zone].push(_memberaddress);
     }
+
+    function getZoneMembers(uint zone) external view returns (address[] memory) {
+        return zonemembers[zone];
+    }
+
 }

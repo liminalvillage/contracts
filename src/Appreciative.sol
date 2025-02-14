@@ -33,6 +33,7 @@ contract Appreciative is Holon {
         creator = _creator;
         flavor = "Appreciative";
         totalappreciation = 0;
+        owner = _creator; // we explicitly set it to understand if this causes an issues
     }
 
       //=============================================================
