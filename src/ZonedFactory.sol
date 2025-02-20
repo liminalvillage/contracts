@@ -30,23 +30,22 @@ contract ZonedFactory {
     /// @param _name The name of the holon.
     /// @return Address of the new holon
 
-<<<<<<< Updated upstream
-   function newHolon(string memory _name, uint _parameter) public returns (address)
-    {
-        //This is required by tests to return the same address. NOTE: it enforces unique names for every holon created.
-        if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
-           return toAddress[_name];
+// V1
+//    function newHolon(string memory _name, uint _parameter) public returns (address)
+//     {
+//         //This is required by tests to return the same address. NOTE: it enforces unique names for every holon created.
+//         if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
+//            return toAddress[_name];
 
-        Zoned newholon = new Zoned(address(this), _name, _parameter); //create an holon
-        address addr = address(newholon);
-        holons[address(0)].push(addr); //add to the global holon list
-        holons[msg.sender].push(addr); // add it to the local holon list
-        if (msg.sender != tx.origin)
-            holons[tx.origin].push(addr); //add it to the personal holon list
+//         Zoned newholon = new Zoned(address(this), _name, _parameter); //create an holon
+//         address addr = address(newholon);
+//         holons[address(0)].push(addr); //add to the global holon list
+//         holons[msg.sender].push(addr); // add it to the local holon list
+//         if (msg.sender != tx.origin)
+//             holons[tx.origin].push(addr); //add it to the personal holon list
         
-        toAddress[_name] = addr; //remove on deploy
+//         toAddress[_name] = addr; //remove on deploy
 
-=======
     function newHolon(string memory _name, uint _parameter) public returns (address) {
         console.log("newHolon (Zoned): called with _name:", _name, "and _parameter:", _parameter);
         
@@ -75,7 +74,6 @@ contract ZonedFactory {
         toAddress[_name] = addr;
         console.log("newHolon (Zoned): Stored holon address for _name:", _name, "in toAddress mapping.");
         
->>>>>>> Stashed changes
         emit NewHolon(_name, addr);
         console.log("newHolon (Zoned): Emitted NewHolon event for _name:", _name);
         
