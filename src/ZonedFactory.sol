@@ -2,6 +2,7 @@
 pragma solidity ^0.8;
 
 import "./Zoned.sol";
+import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -29,6 +30,7 @@ contract ZonedFactory {
     /// @param _name The name of the holon.
     /// @return Address of the new holon
 
+<<<<<<< Updated upstream
    function newHolon(string memory _name, uint _parameter) public returns (address)
     {
         //This is required by tests to return the same address. NOTE: it enforces unique names for every holon created.
@@ -44,10 +46,42 @@ contract ZonedFactory {
         
         toAddress[_name] = addr; //remove on deploy
 
+=======
+    function newHolon(string memory _name, uint _parameter) public returns (address) {
+        console.log("newHolon (Zoned): called with _name:", _name, "and _parameter:", _parameter);
+        
+        // Check if a holon with this name already exists.
+        if (toAddress[_name] > address(0x0)) {
+            console.log("newHolon (Zoned): Holon already exists for _name:", _name, "at address:", uint256(uint160(toAddress[_name])));
+            return toAddress[_name];
+        }
+        
+        console.log("newHolon (Zoned): Deploying new Zoned contract...");
+        Zoned newholon = new Zoned(msg.sender, _name, _parameter);
+        address addr = address(newholon);
+        console.log("newHolon (Zoned): New Zoned deployed at address:", uint256(uint160(addr)));
+        
+        console.log("newHolon (Zoned): Adding holon address to holons[address(0)]...");
+        holons[address(0)].push(addr);
+        
+        console.log("newHolon (Zoned): Adding holon address to holons[msg.sender]...");
+        holons[msg.sender].push(addr);
+        
+        if (msg.sender != tx.origin) {
+            console.log("newHolon (Zoned): msg.sender is a contract. Also adding holon address to holons[tx.origin]...");
+            holons[tx.origin].push(addr);
+        }
+        
+        toAddress[_name] = addr;
+        console.log("newHolon (Zoned): Stored holon address for _name:", _name, "in toAddress mapping.");
+        
+>>>>>>> Stashed changes
         emit NewHolon(_name, addr);
-
+        console.log("newHolon (Zoned): Emitted NewHolon event for _name:", _name);
+        
         return addr;
     }
+
 
     /// @dev Lists every holons ever created
     /// @return an array containing the address of every holon ever created.

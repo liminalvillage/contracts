@@ -18,6 +18,7 @@ pragma solidity ^0.8;
 
 import "./Membrane.sol"; //TODO import interface instead
 
+//#TODO: Idea - if you are leader, any action you do you pass the crown
 contract Crown is Membrane{
     //======================== Structures for tracking appreciation
    

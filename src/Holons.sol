@@ -15,7 +15,7 @@ pragma solidity ^0.8;
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     Peer Production License for more details.
  */
-
+import "forge-std/console.sol";
 
 contract Holons {
 
@@ -27,14 +27,19 @@ contract Holons {
     function newHolon(string memory _flavor, string memory _name, uint _parameter) public returns (address) {
         require(flavors[_flavor] != address(0), "Flavor with this name does not exist");
         address flavorAddress = flavors[_flavor];
-
+        console.log("newHolon: Found flavor", _flavor, "at address:", uint256(uint160(flavorAddress)));
+        
+        console.log("newHolon: Calling delegatecall on flavorAddress with parameters:", _name, _parameter);
         (bool success, bytes memory result) = flavorAddress.delegatecall(
             abi.encodeWithSignature("newHolon(string,uint256)", _name, _parameter)
         );
         
+        console.log("newHolon: Delegatecall completed. Success:", success);
         require(success, "Holon creation failed");
+        
         address holonAddress = abi.decode(result, (address));
-        emit NewHolon( _name, holonAddress);
+        console.log("newHolon: Holon created with name:", _name, "at address:", uint256(uint160(holonAddress)));
+        emit NewHolon(_name, holonAddress);
         
         return holonAddress;
     }

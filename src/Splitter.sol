@@ -21,28 +21,135 @@ import "./IHolonFactory.sol";
 import "./Holon.sol";
 
 contract Splitter is Holon {
- 
-   mapping( address => uint ) public percentages;
-
+   
+    //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
+    string[] public userIds; // list of userIds
+    mapping(string => address) public userIdToAddress; // mapping for userIds to addresses
+    mapping(string => bool) public hasClaimed; // mapping to track if userId has already claimed
+    mapping(string => bool) public isSplitterMember; // mapping to track if userId has already claimed
+    mapping(string => uint256) public etherBalance; // storage for Ether by userID
+    mapping(string => mapping(address => uint256)) public tokenBalance; // storage for ERC20 by userID
+    mapping(string => address[]) public tokensOf; // list of received tokens for a specific userID
+    mapping(address => uint256) public totalDeposited; // total amount of tokens deposited in the contract
+    mapping(string => uint) public percentages;
+    //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
+    address public botAddress;
     constructor (address _creator, string  memory _name, uint _parameter)
     {
         name = _name;
         creator = _creator;
         flavor = "Splitter";
         owner = _creator;
+        // temporairly, for testing purposes: 
+        botAddress = 0x0000000000000000000000000000000000000015;
     }
-  
-    function setSplit(address[] memory members, uint[] memory percentage) public {
-        require(owner == msg.sender, "Only splitter owner can set the split");
-        require(members.length == _members.length, "Members array should be equal to the full list of members");
-        require(members.length == percentage.length, "Members and percentages should be equal");
+
+    // Only the creator can add members
+    //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
+    function addMember(string memory _userId) external {
+        // require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == botAddress, "Only creator can add members");
+        if (isSplitterMember[_userId]) return; // Gently fail if user is already added
+        isSplitterMember[_userId] = true;
+        userIds.push(_userId);
+    }
+
+    // Add multiple members at once
+    //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
+    function addMembers(string[] memory _userIds) external {
+        // require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == botAddress, "Only creator can add members");
+        
+        for (uint i = 0; i < _userIds.length; i++) {
+            string memory userId = _userIds[i];
+            if (isSplitterMember[userId]) continue; // Skip if user is already added
+            isSplitterMember[userId] = true;
+            userIds.push(userId);
+        }
+    }
+    
+    // Function to deposit Ether for a specific userID
+    function depositEtherForUser(
+        string memory _userId,
+        uint256 amount
+    ) external payable {
+        etherBalance[_userId] += amount;
+    }
+
+    // Function to deposit ERC20 tokens for a specific userID
+    function depositTokenForUser(
+        string memory _userId,
+        address _tokenAddress,
+        uint256 _amount
+    ) external {
+        IERC20 token = IERC20(_tokenAddress);
+        //require(token.transferFrom(msg.sender, address(this), _amount), "Token transfer failed");
+        
+        // Debugging purposes;
+        uint256 beforeBalance = tokenBalance[_userId][_tokenAddress];
+ 
+        tokenBalance[_userId][_tokenAddress] += _amount;
+        tokensOf[_userId].push(_tokenAddress);
+        totalDeposited[_tokenAddress] += _amount;
+    }
+
+    //claim both ether and tokens
+    function claim(string memory _userId, address _beneficiary) external {
+        require(!hasClaimed[_userId], "User has already claimed");
+        if (userIdToAddress[_userId] == address(0)) {
+            userIdToAddress[_userId] = _beneficiary; // Associate user ID with address on first claim
+        } else {
+            // require(userIdToAddress[_userId] == _beneficiary, "Unauthorized");
+        }
+        claimEther(_userId, _beneficiary);
+        claimTokens(_userId, _beneficiary);
+        hasClaimed[_userId] = true;
+    }
+
+    // Function for users to claim their Ether
+    function claimEther(string memory _userId, address _beneficiary) internal {
+        // require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == botAddress, "Only creator can submit claim");
+        uint256 amount = etherBalance[_userId];
+        require(_beneficiary != address(0), "Invalid beneficiary address");
+
+        if (amount > 0 ) {
+            (bool sent, bytes memory data) = _beneficiary.call{value: amount}("");
+            require(sent, "Claiming Ether failed");
+        }
+        etherBalance[_userId] = 0;
+    }
+
+    // Function for users to claim their ERC20 tokens
+    function claimTokens(string memory _userId, address _beneficiary) internal {
+        // require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == botAddress, "Only creator can submit claim");
+        // Loop through all tokens and transfer to user
+        address[] memory tokens = tokensOf[_userId];
+        for (uint i = 0; i < tokensOf[_userId].length; i++) {
+            IERC20 token = IERC20(tokens[i]);
+            uint256 amount = tokenBalance[_userId][tokens[i]];
+            if (amount > 0) {
+                tokenBalance[_userId][tokens[i]] = 0;
+                totalDeposited[tokens[i]] -= amount;
+                token.transfer(_beneficiary, amount);
+            }
+        }
+    }
+    // How will we refer to a members? not by id, definitely, we need to use @usernames. 
+    // We have the username in gundb, but what are the consequences of this change?
+    // Note: We decided to use userIds ( as in managed ) as main source of identification
+    function setSplit(string[] memory _userIds, uint[] memory percentage) public {
+        // require(owner == msg.sender, "Only splitter owner can set the split");
+        require(owner == botAddress, "Only splitter owner can set the split");
+        require(_userIds.length == percentage.length, "_userIds and percentages should be equal");
         uint totalPercentage = 0;
         for (uint i = 0; i < percentage.length; i++) {
             totalPercentage += percentage[i];
         }
         require(totalPercentage == 100, "Total percentage should be 100");
-        for (uint i = 0; i < members.length; i++) {
-            percentages[_members[i]] = percentage[i];
+        for (uint i = 0; i < _userIds.length; i++) {
+            percentages[_userIds[i]] = percentage[i];
         }
     }
 
@@ -66,37 +173,67 @@ contract Splitter is Holon {
         
         uint256  amount;
 
-        for (uint256 i = 0; i < _members.length; i++) {
+        for (uint256 i = 0; i < userIds.length; i++) {
            
-                amount = (percentages[_members[i]] * _tokenamount) / 100; //multiply given appreciation with unit reward
+                amount = (percentages[userIds[i]] * _tokenamount) / 100; //multiply given appreciation with unit reward
 
             if (amount > 0 ){
-                address recipient = _members[i];
+                address recipient = userIdToAddress[userIds[i]];
                 bool isContract = recipient.code.length > 0; // Check if the recipient is a contract
                 if (etherreward){
-                    (bool success, ) = _members[i].call{value: amount}("");
-                    require(success, "Transfer failed");
-                    emit MemberRewarded(
-                        address(this),
-                        recipient,
-                        amount,
-                        isContract,
-                        "ETH"
-                    );
+                    if (hasClaimed[userIds[i]]) {
+                        (bool success, ) = payable(recipient).call{value: amount}("");
+                        require(success, "Transfer failed");
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ETH"
+                        );
+                    }
+                    else {
+                        this.depositEtherForUser(userIds[i], amount);
+
+                        emit MemberRewarded(
+                            address(this),
+                            address(0),
+                            amount,
+                            isContract,
+                            "STORED_ETH"
+                        );
+                    }
                 }
                 else {
-                    token.transfer(_members[i],amount);
-                    (bool success,) = _members[i].call(
-                    abi.encodeWithSignature("reward(address,uint256)", _tokenaddress, amount)
-                    );
-                    require(success, "Unable to call the reward function" );
-                    emit MemberRewarded(
-                        address(this),
-                        recipient,
-                        amount,
-                        isContract,
-                        "ERC20"
-                    );
+                    if (hasClaimed[userIds[i]]) {
+                        token.transfer(recipient, amount);
+                        (bool success, ) = recipient.call(
+                            abi.encodeWithSignature(
+                                "reward(address,uint256)",
+                                _tokenaddress,
+                                amount
+                            )
+                        );
+                        require(success, "Unable to call the reward function");
+
+                        emit MemberRewarded(
+                            address(this),
+                            recipient,
+                            amount,
+                            isContract,
+                            "ERC20"
+                        );
+                    } else {
+                        this.depositTokenForUser(userIds[i], _tokenaddress, amount);
+
+                        emit MemberRewarded(
+                            address(this),
+                            address(0),
+                            amount,
+                            isContract,
+                            "STORED_ERC20"
+                        );
+                    }
                 }
             }
         }
@@ -104,7 +241,7 @@ contract Splitter is Holon {
         emit RewardDistributed(
             address(this),
             _tokenamount,
-            _members.length,
+            userIds.length,
             etherreward ? "ETH" : "ERC20"
         );
     }

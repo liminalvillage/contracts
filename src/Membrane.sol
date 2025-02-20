@@ -60,9 +60,18 @@ contract Membrane {
 
         bool success;
         bytes memory data;
-        (success, data) = _memberaddress.staticcall(
-            abi.encodeWithSignature("addParent(address)", address(this))
-        );
+
+        // v1 
+        // (success, data) = _memberaddress.staticcall(
+        //     abi.encodeWithSignature("addParent(address)", address(this))
+        // );
+
+        // bool success;
+        // bytes memory data;
+        
+        // (success, data) = _memberaddress.staticcall(
+        //     abi.encodeWithSignature("addParent(address)", address(this))
+        // );
 
         if (success) {
             (success,) = _memberaddress.call(
