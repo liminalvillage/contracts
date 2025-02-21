@@ -242,6 +242,8 @@ contract MultipleHolonsHierarchy is Test {
         // - Zone 1 (members "G" and "H") gets a total of 2.5 tokens (each 1.25 tokens).
         // - Zone 5 (member "deployer") gets 2.5 tokens.
         vm.prank(deployer);
+        zoned.claim("deployer", deployer);
+        vm.prank(deployer);
         zoned.claim("G", G);
         vm.prank(deployer);
         zoned.claim("H", H);
@@ -254,7 +256,11 @@ contract MultipleHolonsHierarchy is Test {
         assertEq(token.balanceOf(H), expectedZone1Share);
 
         uint256 expectedZone5Share = 2.5 ether;
+        console.log("Here is where the contract fails!");
         uint256 deployerReward = token.balanceOf(deployer) - deployerInitialBalance;
+        console.log("I was wrong!");
+        console.log("deployerReward", deployerReward);
+        console.log("expectedZone5Share", expectedZone5Share);
         assertEq(deployerReward, expectedZone5Share);
 
         assertEq(token.balanceOf(A), 50 ether);

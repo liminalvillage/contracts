@@ -18,6 +18,7 @@ pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Holon.sol";
+import "forge-std/console.sol";
 
 contract Appreciative is Holon {
 
@@ -43,7 +44,6 @@ contract Appreciative is Holon {
         creator = _creator;
         flavor = "Appreciative";
         totalappreciation = 0;
-        v1
         owner = _creator; // We explicitly set it to understand if this causes an issues
         addressToUserId[msg.sender] = "bot123"; // Was necessary as we set telegramUserIds as base
 

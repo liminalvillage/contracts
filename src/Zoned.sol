@@ -20,6 +20,7 @@ pragma solidity ^0.8;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "forge-std/console.sol";
 
  contract Zoned is Holon{
 
@@ -341,20 +342,20 @@ import "./Holon.sol";
         rewards = calculateRewards();
     }
 
-            // Function to calculate base rewards for zones 1 to 6
+    // Function to calculate base rewards for zones 1 to 6
     function calculateRewards() public view returns (uint256[] memory) {
-        uint256[] memory rewards = new uint256[](6);
+        uint256[] memory _rewards = new uint256[](6);
         uint256 total = 0;
-        for (uint256 zone = 1; zone <= nzones; ++zone) {
-            rewards[zone] = a * zone * zone + b * zone + c;
-            total += rewards[zone];
+        for (uint256 _zone = 1; _zone <= nzones; ++_zone) {
+            _rewards[_zone] = a * _zone * _zone + b * _zone + c;
+            total += _rewards[_zone];
         }
-        // Function to normalize rewards to sum to 100%
-        for (uint256 i = 0; i < rewards.length; i++) {
+        // Function to normalize _rewards to sum to 100%
+        for (uint256 i = 0; i < _rewards.length; i++) {
             // Multiply by 10000 for scaling to maintain precision
-            rewards[i] = rewards[i] * 10000 / total;
+            _rewards[i] = _rewards[i] * 10000 / total;
         }
-        return rewards;
+        return _rewards;
     }
     
 
