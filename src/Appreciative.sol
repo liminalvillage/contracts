@@ -37,6 +37,7 @@ contract Appreciative is Holon {
     mapping(string => mapping(address => uint256)) public tokenBalance; // storage for ERC20 by userID
     mapping(string => address[]) public tokensOf; // list of received tokens for a specific userID
     mapping(address => uint256) public totalDeposited; // total amount of tokens deposited in the contract
+    // string public flavor;
 
     constructor (address _creator, string  memory _name)
     {
@@ -46,7 +47,6 @@ contract Appreciative is Holon {
         totalappreciation = 0;
         owner = _creator; // We explicitly set it to understand if this causes an issues
         addressToUserId[msg.sender] = "bot123"; // Was necessary as we set telegramUserIds as base
-
     }
 
       //=============================================================

@@ -33,12 +33,13 @@ contract Managed is Holon {
     uint256 public totalappreciation;
     mapping(string => uint256) public appreciation; // appreciation received by a member based on UserID
     uint256 public maxAppreciation = 1e30; // appreciation has to be capped, and potentionaly dynamically changed so we can evade 0x11 arithmethic overflows
-
+    // string public flavor;
 
     constructor(address _creator, string memory _name) {
         name = _name;
         creator = _creator;
         totalappreciation = 0;
+        flavor = "Managed";
     }
 
     // Only the creator can add members

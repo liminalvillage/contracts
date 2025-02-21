@@ -34,6 +34,7 @@ contract Splitter is Holon {
     mapping(string => uint) public percentages;
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     address public botAddress;
+    // string public flavor;
     constructor (address _creator, string  memory _name, uint _parameter)
     {
         name = _name;
@@ -41,7 +42,7 @@ contract Splitter is Holon {
         flavor = "Splitter";
         owner = _creator;
         // temporairly, for testing purposes: 
-        botAddress = 0x0000000000000000000000000000000000000015;
+        botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     }
 
     // Only the creator can add members

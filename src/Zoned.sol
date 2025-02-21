@@ -36,6 +36,7 @@ import "forge-std/console.sol";
     mapping(string => address[]) public tokensOf; // list of received tokens for a specific userID
     mapping(address => uint256) public totalDeposited; // total amount of tokens deposited in the contract
     mapping(string => uint) public percentages;
+    // string public flavor;
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     // Membrane variables and functionalities
 
