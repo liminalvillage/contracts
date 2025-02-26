@@ -100,10 +100,15 @@ contract DeployAndInteract is Script {
         dc.holons.newFlavor("zoned", address(dc.zonedFlavor));
 
         // Create holon instances
-        address managedAddr = dc.holons.newHolon("managed", "Managed", 0);
-        address appreciativeAddr = dc.holons.newHolon("appreciative", "Appreciative", 0);
-        address splitterAddr = dc.holons.newHolon("splitter", "Splitter", 1);
-        address zonedAddr = dc.holons.newHolon("zoned", "Zoned", 5);
+        // address managedAddr = dc.holons.newHolon("managed", "Managed", 0);
+        // address appreciativeAddr = dc.holons.newHolon("appreciative", "Appreciative", 0);
+        // address splitterAddr = dc.holons.newHolon("splitter", "Splitter", 1);
+        // address zonedAddr = dc.holons.newHolon("zoned", "Zoned", 5);
+
+        address managedAddr = dc.holons.newHolon("managed", "deployer_id", "Managed", 0);
+        address appreciativeAddr = dc.holons.newHolon("appreciative", "deployer_id", "Appreciative", 0);
+        address splitterAddr = dc.holons.newHolon("splitter", "deployer_id", "Splitter", 1);
+        address zonedAddr = dc.holons.newHolon("zoned", "deployer_id", "Zoned", 5);
 
         dc.managed = Managed(payable(managedAddr));
         dc.appreciative = Appreciative(payable(appreciativeAddr));
@@ -142,9 +147,9 @@ contract DeployAndInteract is Script {
         dc.splitter.addMember("F");
 
         // Zoned holon: add members "deployer", "G", and "H"
-        dc.zoned.addMember("deployer");
-        dc.zoned.addMember("G");
-        dc.zoned.addMember("H");
+        dc.zoned.addMember("deployer_id", "deployer");
+        dc.zoned.addMember("deployer_id", "G");
+        dc.zoned.addMember("deployer_id", "H");
 
         // Set split for Splitter: "E" and "F" share equally
         {
@@ -158,9 +163,9 @@ contract DeployAndInteract is Script {
         }
 
         // Adjust zone settings in Zoned holon
-        dc.zoned.addToZone("deployer", 5);
-        dc.zoned.addToZone("G", 1);
-        dc.zoned.addToZone("H", 1);
+        dc.zoned.addToZone("deployer_id", "deployer", 5);
+        dc.zoned.addToZone("deployer_id", "G", 1);
+        dc.zoned.addToZone("deployer_id", "H", 1);
 
         // Note: The hierarchy linking is achieved by making Managed’s second member
         // be the Appreciative holon, Appreciative’s second member be the Splitter, and so on.

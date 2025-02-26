@@ -46,7 +46,7 @@ contract ZonedFactory {
         
 //         toAddress[_name] = addr; //remove on deploy
 
-    function newHolon(string memory _name, uint _parameter) public returns (address) {
+    function newHolon(string memory creatorUserId, string memory _name, uint _parameter) public returns (address) {
         console.log("newHolon (Zoned): called with _name:", _name, "and _parameter:", _parameter);
         
         // Check if a holon with this name already exists.
@@ -56,7 +56,7 @@ contract ZonedFactory {
         }
         
         console.log("newHolon (Zoned): Deploying new Zoned contract...");
-        Zoned newholon = new Zoned(msg.sender, _name, _parameter);
+        Zoned newholon = new Zoned(creatorUserId, msg.sender, _name, _parameter);
         address addr = address(newholon);
         console.log("newHolon (Zoned): New Zoned deployed at address:", uint256(uint160(addr)));
         
@@ -79,7 +79,18 @@ contract ZonedFactory {
         
         return addr;
     }
-
+    // function newHolon(string memory creatorUserId, string memory _name, uint _parameter) public returns (address) {
+    //     Zoned newholon = new Zoned(creatorUserId, msg.sender, _name, _parameter);
+    //     address addr = address(newholon);
+        
+    //     // Only implement core required storage
+    //     holons[address(0)].push(addr);
+    //     holons[msg.sender].push(addr);
+    //     toAddress[_name] = addr;
+        
+    //     emit NewHolon(_name, addr);
+    //     return addr;
+    // }
 
     /// @dev Lists every holons ever created
     /// @return an array containing the address of every holon ever created.

@@ -30,7 +30,7 @@ contract Appreciative is Holon {
     // Added in accordance with Managed.sol
     string[] public userIds; // list of userIds
     mapping(string => address) public userIdToAddress; // mapping for userIds to addresses
-    mapping(address => string) public addressToUserId; // reverse mapping
+    mapping(address => string) public addressToUserId; // reverse mapping ( for later, when we introduce account abstraction )
     mapping(string => bool) public hasClaimed; // mapping to track if userId has already claimed
     mapping(string => bool) public isAppreciativeMember; // mapping to track if userId has already claimed
     mapping(string => uint256) public etherBalance; // storage for Ether by userID
@@ -38,15 +38,26 @@ contract Appreciative is Holon {
     mapping(string => address[]) public tokensOf; // list of received tokens for a specific userID
     mapping(address => uint256) public totalDeposited; // total amount of tokens deposited in the contract
     // string public flavor;
+    address public botAddress;
 
-    constructor (address _creator, string  memory _name)
+    constructor (string  memory _name, string memory creatorUserId, address _creator)
     {
+
+        // Those parameters are coming from AppreciativeFactory:
+        // _name, creatorUserId, msg.sender
         name = _name;
         creator = _creator;
         flavor = "Appreciative";
         totalappreciation = 0;
         owner = _creator; // We explicitly set it to understand if this causes an issues
-        addressToUserId[msg.sender] = "bot123"; // Was necessary as we set telegramUserIds as base
+        // addressToUserId[botAddress] = userId; // Will be necessary as we introduce account abstraction
+        
+        // temporairly, for testing purposes: 
+        botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        isAppreciativeMember[creatorUserId] = true;
+        userIds.push(creatorUserId);
+        remainingappreciation[creatorUserId] = 100;
+
     }
 
       //=============================================================
@@ -61,13 +72,16 @@ contract Appreciative is Holon {
     /// @param _userId The ( telegram ) userId of the receiving member
     /// @param _percentage The amount of the appreciation to give in percentage.
 
-    function appreciate(string memory _userId, uint8 _percentage)
+    function appreciate(string memory senderUserId, string memory _userId, uint8 _percentage)
         external
     {
         // senderUserId is bot in this case, might be the user in case of AA. 
         // We need to add it's userId alongside the address if this function should remain the same
-        string memory senderUserId = addressToUserId[msg.sender]; // The problem here is that the message sender will always
-        // be the same ( bot )
+
+        // string memory senderUserId = addressToUserId[msg.sender]; 
+        // ^
+        // The problem here is that the message sender will always
+        // be the same ( bot ). This will become necessary once we introduce AA.
         require(isAppreciativeMember[senderUserId] || isAppreciativeMember[_userId], 
                 "Sender or Receiver is not a member");
         require(keccak256(bytes(senderUserId)) != keccak256(bytes(_userId)), 
@@ -97,6 +111,7 @@ contract Appreciative is Holon {
     /// @dev Sets appreciation for a group of members
     /// @notice This is the only way to change already assigned appreciation
     /// @notice Currently could be called by anyone?
+    //#TODO: Apply require statements from `appreciate` here as well
     function setAppreciation(string[] memory _userIds, uint8[] memory _percentages)
         external
     {
@@ -124,14 +139,16 @@ contract Appreciative is Holon {
     }
 
     function addMember(string memory _userId) external {
-        require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == botAddress, "Only bot can add members currently");
+        //#TODO: Add check if the member is adding a member
         if (isAppreciativeMember[_userId]) return; // Gently fail if user is already added
         isAppreciativeMember[_userId] = true;
         userIds.push(_userId);
     }
     function addMembers(string[] memory _userIds) external {
-        require(msg.sender == creator, "Only creator can add members");
-        for (uint i = 0; i < userIds.length; i++) {
+        require(msg.sender == botAddress, "Only bot can add members currently");
+        //#TODO: Add check if the member is adding a member
+        for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isAppreciativeMember[userId]) continue; // Skip if user is already added
             isAppreciativeMember[userId] = true;

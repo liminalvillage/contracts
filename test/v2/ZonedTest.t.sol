@@ -37,7 +37,7 @@ contract ZonedTest is Test {
         vm.deal(coreMember, 1 ether);
         
         vm.prank(creator);
-        zoned = new Zoned(creator, "TestHolon", 6);
+        zoned = new Zoned("deployer_id", creator, "TestHolon", 6);
         
         vm.prank(creator);
         mockToken = new MockERC20();
@@ -47,7 +47,7 @@ contract ZonedTest is Test {
         vm.startPrank(creator);
         
         // Test single member addition
-        zoned.addMember("user1");
+        zoned.addMember("test_creator", "user1");
         assertTrue(zoned.isZonedMember("user1"));
         assertEq(zoned.zone("user1"), 0); // Should be added to zone 0
         
@@ -55,7 +55,7 @@ contract ZonedTest is Test {
         string[] memory users = new string[](2);
         users[0] = "user2";
         users[1] = "user3";
-        zoned.addMembers(users);
+        zoned.addMembers("deployer_id", users);
         
         assertTrue(zoned.isZonedMember("user2"));
         assertTrue(zoned.isZonedMember("user3"));
@@ -69,7 +69,7 @@ contract ZonedTest is Test {
         vm.startPrank(creator);
         
         // Add a member
-        zoned.addMember("user1");
+        zoned.addMember("test_creator", "user1");
         
         // Test Ether deposit
         zoned.depositEtherForUser{value: 1 ether}("user1", 1 ether);
@@ -101,7 +101,7 @@ contract ZonedTest is Test {
         vm.startPrank(creator);
         
         // Test setting different reward function parameters
-        zoned.setRewardFunction(1, 1, 1);
+        zoned.setRewardFunction("deployer_id", 1, 1, 1);
         uint256[] memory rewards = zoned.calculateRewards();
         
         // Verify rewards array length
@@ -126,15 +126,15 @@ contract ZonedTest is Test {
         vm.startPrank(creator);
         
         // Add member to zone 2
-        zoned.addMember("user1");
-        zoned.addToZone("user1", 2);
+        zoned.addMember("test_creator","user1");
+        zoned.addToZone("test_creator","user1", 2);
         assertEq(zoned.zone("user1"), 2);
         
         // Get initial zone 2 members count
         uint256 initialZone2Count = getZoneMembersCount(2);
         
         // Move to zone 3
-        zoned.addToZone("user1", 3);
+        zoned.addToZone("test_creator","user1", 3);
         
         // Verify zone change
         assertEq(zoned.zone("user1"), 3);
@@ -148,17 +148,17 @@ contract ZonedTest is Test {
         // Test unauthorized member addition
         vm.prank(member1);
         vm.expectRevert("Only creator can add members");
-        zoned.addMember("user1");
+        zoned.addMember("test_creator","user1");
         
         // Test unauthorized zone change
         vm.prank(member1);
         vm.expectRevert("only creator can change the zones currently!");
-        zoned.addToZone("user1", 1);
+        zoned.addToZone("test_creator","user1", 1);
         
         // Test unauthorized reward function change
         vm.prank(member1);
         vm.expectRevert("only creator can change members can change the reward function");
-        zoned.setRewardFunction(1, 1, 1);
+        zoned.setRewardFunction("deployer_id", 1, 1, 1);
     }
 
     // Helper function to count members in a zone

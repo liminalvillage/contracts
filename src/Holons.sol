@@ -24,14 +24,14 @@ contract Holons {
 
     event NewHolon (string name, address addr);
 
-    function newHolon(string memory _flavor, string memory _name, uint _parameter) public returns (address) {
+    function newHolon(string memory _flavor, string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
         require(flavors[_flavor] != address(0), "Flavor with this name does not exist");
         address flavorAddress = flavors[_flavor];
         console.log("newHolon: Found flavor", _flavor, "at address:", uint256(uint160(flavorAddress)));
         
         console.log("newHolon: Calling delegatecall on flavorAddress with parameters:", _name, _parameter);
         (bool success, bytes memory result) = flavorAddress.delegatecall(
-            abi.encodeWithSignature("newHolon(string,uint256)", _name, _parameter)
+            abi.encodeWithSignature("newHolon(string,string,uint256)", _creatorUserId, _name, _parameter)
         );
         
         console.log("newHolon: Delegatecall completed. Success:", success);

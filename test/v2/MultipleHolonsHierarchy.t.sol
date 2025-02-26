@@ -122,19 +122,19 @@ contract MultipleHolonsHierarchy is Test {
 
         console.log("Creating holon instances via Holons contract...");
         console.log("Creating Managed holon...");
-        address managedAddr = holons.newHolon("managed", "Managed", 0);
+        address managedAddr = holons.newHolon("managed", "test_creator", "Managed", 0);
         console.log("Managed holon created at:", managedAddr);
 
         console.log("Creating Appreciative holon...");
-        address appreciativeAddr = holons.newHolon("appreciative", "Appreciative", 0);
+        address appreciativeAddr = holons.newHolon("appreciative", "test_creator", "Appreciative", 0);
         console.log("Appreciative holon created at:", appreciativeAddr);
 
         console.log("Creating Splitter holon...");
-        address splitterAddr = holons.newHolon("splitter", "Splitter", 1);
+        address splitterAddr = holons.newHolon("splitter", "test_creator", "Splitter", 1);
         console.log("Splitter holon created at:", splitterAddr);
 
         console.log("Creating Zoned holon...");
-        address zonedAddr = holons.newHolon("zoned", "Zoned", 5);
+        address zonedAddr = holons.newHolon("zoned", "test_creator", "Zoned", 5);
         console.log("Zoned holon created at:", zonedAddr);
 
         // Cast addresses to their respective contract types
@@ -151,11 +151,11 @@ contract MultipleHolonsHierarchy is Test {
         console.log("Deployer address:", deployer);
 
         console.log("Adding members to Zoned contract...");
-        zoned.addMember("deployer");
+        zoned.addMember("test_creator","deployer");
         console.log("Added member 'deployer'");
-        zoned.addMember("G");
+        zoned.addMember("test_creator","G");
         console.log("Added member 'G'");
-        zoned.addMember("H");
+        zoned.addMember("test_creator","H");
         console.log("Added member 'H'");
 
         vm.stopPrank();
@@ -198,10 +198,10 @@ contract MultipleHolonsHierarchy is Test {
         // For Zoned, adjust zones for members.
         vm.startPrank(deployer, deployer);
         console.log("Deployer zone before addToZone:", zoned.zone("deployer"));
-        zoned.addToZone("deployer", 5);
+        zoned.addToZone("deployer_id", "deployer", 5);
         console.log("Deployer zone after addToZone:", zoned.zone("deployer"));
-        zoned.addToZone("G", 1);
-        zoned.addToZone("H", 1);
+        zoned.addToZone("deployer_id", "G", 1);
+        zoned.addToZone("deployer_id", "H", 1);
         vm.stopPrank();
 
         // Transfer 100 tokens to the Managed holon contract.

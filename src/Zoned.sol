@@ -70,11 +70,9 @@ import "forge-std/console.sol";
     //     nzones = _nzones;
     //     zone[tx.origin]= _nzones;
     //     zonemembers[_nzones].push(tx.origin);
-    constructor (address _creator, string memory _name, uint _nzones) {
-        console.log("Zoned.constructor: Entered constructor");
-        console.log("Zoned.constructor, creator: ", _creator);
-        botAddress = 0x0000000000000000000000000000000000000015;
-        
+
+
+    constructor (string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
         name = _name;
         console.log("Zoned.constructor: Set name to:", _name);
         
@@ -97,13 +95,23 @@ import "forge-std/console.sol";
         a = 0;
         b = 0;
         c = 1;
+        botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        isZonedMember[creatorUserId] = true;
+        userIds.push(creatorUserId);
+        zonemembers[_nzones].push(creatorUserId);
+        zone[creatorUserId] = _nzones;
         console.log("Zoned.constructor: Calling setRewardFunction with a, b, c =", a, b, c);
-        setRewardFunction(a, b, c);
+        setRewardFunction(creatorUserId, a, b, c);
         console.log("Zoned.constructor: setRewardFunction completed");
         
         console.log("Zoned.constructor: Exiting constructor successfully");
     }
-
+    // constructor(string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
+    //     name = _name;
+    //     creator = _creator;
+    //     flavor = "Zoned";
+    //     owner = _creator;
+    // }
 
     //=============================================================
     //                      Membrane Functions
@@ -113,8 +121,9 @@ import "forge-std/console.sol";
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     //#TODO: This needs to be overwritten
     // Add a single member (automatically to zone 0)
-    function addMember(string memory _userId) external {
+    function addMember(string memory senderUserId, string memory _userId) external {
         require(msg.sender == creator, "Only creator can add members");
+        require(isZonedMember[senderUserId], "Only members can add members");
         
         if (isZonedMember[_userId]) return; // Gently fail if user is already added
         
@@ -128,8 +137,9 @@ import "forge-std/console.sol";
     // Add multiple members at once
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     //#TODO: This needs to be overwritten
-    function addMembers(string[] memory _userIds) external {
+    function addMembers(string memory senderUserId, string[] memory _userIds) external {
         require(msg.sender == creator, "Only creator can add members");
+        require(isZonedMember[senderUserId], "Only members can add members");
         
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
@@ -183,10 +193,12 @@ import "forge-std/console.sol";
 
     // Function for users to claim their Ether
     function claimEther(string memory _userId, address _beneficiary) internal {
+        //#TODO: creator should become bot?
         require(
             msg.sender == creator,
             "Only creator can submit an user claim Ether"
         );
+        //#TODO: Later this will be member address. 
         uint256 amount = etherBalance[_userId];
         require(_beneficiary != address(0), "Invalid beneficiary address");
 
@@ -199,6 +211,7 @@ import "forge-std/console.sol";
 
     // Function for users to claim their ERC20 tokens
     function claimTokens(string memory _userId, address _beneficiary) internal {
+        //#TODO: creator should become bot?
         require(
             msg.sender == creator,
             "Only creator can submit an user claim Tokens"
@@ -329,14 +342,17 @@ import "forge-std/console.sol";
     }
     
 
-    function setRewardFunction(uint _a, uint _b, uint _c) public {
+    function setRewardFunction(string memory senderUserId, uint _a, uint _b, uint _c) public {
         // v1
         // require (zone[tx.origin] == nzones, "only core members can change the reward function");
         // require (zone[tx.origin] == nzones, "only core members can change the reward function");
         // require (zone[creator] == nzones, "only core members can change the reward function");
         // require (zone[msg.sender] == nzones, "only core members can change the reward function");
         console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
+        // only core members can change reward function
         require (msg.sender == creator || msg.sender == factory, "only creator or factory can change the reward function");
+        require(zone[senderUserId] == nzones, "member must be in the highest zone");
+
         a = _a;
         b = _b;
         c = _c;
@@ -367,12 +383,12 @@ import "forge-std/console.sol";
         //return _totalreward / nzones ;//(2 ^ (_zone + 1));
     }
 
-    function addToZone(string memory _userId, uint _zone) public/// @notice Explain to an end user what this does
+    function addToZone(string memory senderUserId, string memory _userId, uint _zone) public/// @notice Explain to an end user what this does
     /// @dev Explain to a developer any extra details
     /// @param Documents a parameter just like in doxygen (must be followed by parameter name)) private returns (uint zonereward)
     {
         require(msg.sender == botAddress, "only creator can change the zones currently!");
-        // require(zone[_userId] >= _zone, "members in lower zones cannot promote to higher zones");
+        require(zone[senderUserId] >= _zone, "members in lower zones cannot promote to higher zones");
         // TODO Cooloff period for nominations or validation of nomination
        
        

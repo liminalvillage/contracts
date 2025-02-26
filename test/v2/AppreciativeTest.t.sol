@@ -43,7 +43,7 @@ contract AppreciativeTest is Test {
         vm.startPrank(creator);
         
         // Deploy contracts
-        holon = new Appreciative(creator, "TestHolon");
+        holon = new Appreciative("deployer_id", "TestHolon", creator);
         token = new MockToken();
         
         // Add members
@@ -86,7 +86,7 @@ contract AppreciativeTest is Test {
     // Test Appreciation System
     function testValidAppreciation() public {
         vm.prank(creator);
-        holon.appreciate(user2, 50);
+        holon.appreciate("deployer_id", user2, 50);
         
         assertEq(holon.appreciation(user2), 50);
         assertEq(holon.totalappreciation(), 50);
@@ -94,12 +94,12 @@ contract AppreciativeTest is Test {
 
     function testFailAppreciateOverLimit() public {
         vm.prank(creator);
-        holon.appreciate(user2, 101);
+        holon.appreciate("deployer_id", user2, 101);
     }
 
     function testFailAppreciateNonMember() public {
         vm.prank(creator);
-        holon.appreciate("nonMember", 50);
+        holon.appreciate("deployer_id", "nonMember", 50);
     }
 
     // Test Deposit and Claim System
@@ -158,7 +158,7 @@ contract AppreciativeTest is Test {
         
         // Set up appreciation
         vm.startPrank(creator);
-        holon.appreciate(user2, 60); // user2 gets 60% appreciation
+        holon.appreciate("deployer_id", user2, 60); // user2 gets 60% appreciation
         
         // Distribute rewards
         holon.reward(address(0), rewardAmount);

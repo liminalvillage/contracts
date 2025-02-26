@@ -51,7 +51,7 @@ contract Deploy is Script {
         console2.log("Holons deployed at:", address(holons));
 
         console2.log("Deploying Zoned...");
-        Zoned zoned = new Zoned(msg.sender,"5", 1);
+        Zoned zoned = new Zoned("123", msg.sender,"5", 1); // We don't need to deploy Zones like this
         console2.log("Zoned deployed at:", address(zoned));
 
         console2.log("Deploying Splitter...");
