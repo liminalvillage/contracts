@@ -390,20 +390,16 @@ import "forge-std/console.sol";
         require(msg.sender == botAddress, "only creator can change the zones currently!");
         require(zone[senderUserId] >= _zone, "members in lower zones cannot promote to higher zones");
         // TODO Cooloff period for nominations or validation of nomination
+        require(isZonedMember[_userId], "only zone members can have their zones changed");
        
-       
-        if (zone[_userId] > 0) {//if member was already in a zone
-             //search and remove member from current group
-            // fetch correct zone members 
-            uint previouszone = zone[_userId];
-            for (uint256 i = 0; i < zonemembers[previouszone].length; i++) {
-                if (keccak256(abi.encodePacked(zonemembers[previouszone][i])) == keccak256(abi.encodePacked(_userId))){
-                zonemembers[previouszone][i] = zonemembers[previouszone][zonemembers[previouszone].length - 1]; //swap position with last member
-                break;
-                }
+        uint previouszone = zone[_userId];
+        for (uint256 i = 0; i < zonemembers[previouszone].length; i++) {
+            if (keccak256(abi.encodePacked(zonemembers[previouszone][i])) == keccak256(abi.encodePacked(_userId))){
+            zonemembers[previouszone][i] = zonemembers[previouszone][zonemembers[previouszone].length - 1]; //swap position with last member
+            break;
             }
-            zonemembers[previouszone].pop(); // remove last member
         }
+        zonemembers[previouszone].pop(); // remove last member
         
         zone[_userId]= _zone;
         zonemembers[_zone].push(_userId);
