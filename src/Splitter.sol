@@ -2,6 +2,7 @@
 pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+// import "openzeppelin/contracts/access/Ownable.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -19,6 +20,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  */
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "forge-std/console.sol";
 
 contract Splitter is Holon {
    
@@ -43,6 +45,7 @@ contract Splitter is Holon {
         owner = _creator;
         // temporairly, for testing purposes: 
         botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        console.log("Splitter.constructor: Set owner to creator with address: ", _creator);    
     }
 
     // Only the creator can add members
@@ -58,9 +61,7 @@ contract Splitter is Holon {
     // Add multiple members at once
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     function addMembers(string[] memory _userIds) external {
-        // require(msg.sender == creator, "Only creator can add members");
         require(msg.sender == botAddress, "Only creator can add members");
-        
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isSplitterMember[userId]) continue; // Skip if user is already added

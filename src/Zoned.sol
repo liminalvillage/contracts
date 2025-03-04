@@ -89,7 +89,7 @@ import "forge-std/console.sol";
         owner = _creator;
         factory = msg.sender;
         // owner = msg.sender;
-        console.log("Zoned.constructor: Set owner to creator");
+        console.log("Zoned.constructor: Set owner to creator with address: ", _creator);
 
         // Initialize reward parameters and call setRewardFunction
         a = 0;
@@ -350,7 +350,7 @@ import "forge-std/console.sol";
         // require (zone[msg.sender] == nzones, "only core members can change the reward function");
         console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
         // only core members can change reward function
-        require (msg.sender == creator || msg.sender == factory, "only creator or factory can change the reward function");
+        require (msg.sender == creator || msg.sender == factory, "only creator or bot can change the reward function currently");
         require(zone[senderUserId] == nzones, "member must be in the highest zone");
 
         a = _a;

@@ -41,7 +41,7 @@ contract GetUsersAndTheirTokenBalanaces is Script {
         // Managed managed = Managed(targetHolonAddress);
 
         // Replace with the actual deployed address
-        address payable managedContractAddress = payable(0xa6d2E0f6E25DC354b3b29A25fC2874D3F6bcdeC6);
+        address payable managedContractAddress = payable(0x61c36a8d610163660E21a8b7359e1Cac0C9133e1);
         Managed managed = Managed(managedContractAddress);
 
         // -------------------------------------------------

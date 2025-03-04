@@ -51,6 +51,7 @@ contract Appreciative is Holon {
         totalappreciation = 0;
         owner = _creator; // We explicitly set it to understand if this causes an issues
         // addressToUserId[botAddress] = userId; // Will be necessary as we introduce account abstraction
+        console.log("Appreciative.constructor: Set owner to creator with address: ", _creator);
         
         // temporairly, for testing purposes: 
         botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;

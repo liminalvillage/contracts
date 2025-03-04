@@ -20,6 +20,7 @@ import "v3-core/contracts/libraries/FullMath.sol";
  */
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "forge-std/console.sol";
 
 contract Managed is Holon {
     string[] public userIds; // list of userIds
@@ -40,6 +41,7 @@ contract Managed is Holon {
         creator = _creator;
         totalappreciation = 0;
         flavor = "Managed";
+        console.log("Managed.constructor: Set owner to creator with address: ", _creator);
     }
 
     // Only the creator can add members

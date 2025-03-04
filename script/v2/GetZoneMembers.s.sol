@@ -120,7 +120,7 @@ contract GetAllZoneMembersScript is Script {
             }
         }
         
-        // Close and write the all zones JSON
+        // Close and write the all s JSON
         allZonesJson = string.concat(allZonesJson, "}");
         vm.writeFile("all_zones_members.json", allZonesJson);
         
