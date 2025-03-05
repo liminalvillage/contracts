@@ -44,7 +44,8 @@ contract Splitter is Holon {
         flavor = "Splitter";
         owner = _creator;
         // temporairly, for testing purposes: 
-        botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        // botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // localhost
+        botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
         console.log("Splitter.constructor: Set owner to creator with address: ", _creator);    
     }
 

@@ -54,7 +54,8 @@ contract Appreciative is Holon {
         console.log("Appreciative.constructor: Set owner to creator with address: ", _creator);
         
         // temporairly, for testing purposes: 
-        botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        // botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // localhost
+        botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
         isAppreciativeMember[creatorUserId] = true;
         userIds.push(creatorUserId);
         remainingappreciation[creatorUserId] = 100;
