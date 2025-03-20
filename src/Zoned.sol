@@ -123,8 +123,7 @@ import "forge-std/console.sol";
     //#TODO: This needs to be overwritten
     // Add a single member (automatically to zone 0)
     function addMember(string memory senderUserId, string memory _userId) external {
-        require(msg.sender == creator, "Only creator can add members");
-        require(isZonedMember[senderUserId], "Only members can add members");
+        require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
         
         if (isZonedMember[_userId]) return; // Gently fail if user is already added
         
@@ -132,15 +131,14 @@ import "forge-std/console.sol";
         userIds.push(_userId);
         
         // Add to zone 0
-        zone[_userId] = 0;
+        zone[_userId] = 0;  
         zonemembers[0].push(_userId);
     }
     // Add multiple members at once
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     //#TODO: This needs to be overwritten
     function addMembers(string memory senderUserId, string[] memory _userIds) external {
-        require(msg.sender == creator, "Only creator can add members");
-        require(isZonedMember[senderUserId], "Only members can add members");
+        require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
         
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
@@ -258,7 +256,7 @@ import "forge-std/console.sol";
         uint256 amount;
         uint256 totalMembersRewarded = 0; // Counter for all rewarded members
 
-        for (uint256 z = 1;  z <= nzones; z++) { //skip zone 0 as unassigned members
+        for (uint256 z = 0;  z <= nzones; z++) { //skip zone 0 as unassigned members
             if (zonemembers[z].length > 0) {
                 amount = rewardFunction(z, _tokenamount) / zonemembers[z].length; // divide reward equally for all members in the same zone
                 for (uint256 i = 0; i < zonemembers[z].length; i++) {
@@ -364,7 +362,7 @@ import "forge-std/console.sol";
     function calculateRewards() public view returns (uint256[] memory) {
         uint256[] memory _rewards = new uint256[](6);
         uint256 total = 0;
-        for (uint256 _zone = 1; _zone <= nzones; ++_zone) {
+        for (uint256 _zone = 0; _zone <= nzones; ++_zone) {
             _rewards[_zone] = a * _zone * _zone + b * _zone + c;
             total += _rewards[_zone];
         }

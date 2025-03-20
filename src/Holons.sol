@@ -33,17 +33,24 @@ contract Holons {
         (bool success, bytes memory result) = flavorAddress.delegatecall(
             abi.encodeWithSignature("newHolon(string,string,uint256)", _creatorUserId, _name, _parameter)
         );
-        
         console.log("newHolon: Delegatecall completed. Success:", success);
         require(success, "Holon creation failed");
         
         address holonAddress = abi.decode(result, (address));
         console.log("newHolon: Holon created with name:", _name, "at address:", uint256(uint160(holonAddress)));
+        toAddress[_name] = holonAddress;
         emit NewHolon(_name, holonAddress);
         
         return holonAddress;
     }
-
+    function newHolonBundle(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address){
+        // 1. Create splitter by default
+        // 2. Create managed and zoned and add it to the splitter list of contracts
+        // 3. Split commands in the bot so we know which action goes to: 
+            // 1. Spliter - change split mostly
+            // 2. Managed - internal chat members
+            // 3. Zoned - external members and groups 
+    }
     mapping (string => address) private flavors;
     string[] public knownflavors;
 
@@ -67,7 +74,7 @@ contract Holons {
         return knownflavors;
     }
 
-        /// @dev Lists every holons ever created
+    /// @dev Lists every holons ever created
     /// @return an array containing the address of every holon ever created.
 
     function listHolons() external view returns (address[] memory ){

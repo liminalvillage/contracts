@@ -50,10 +50,9 @@ contract ZonedFactory {
         console.log("newHolon (Zoned): called with _name:", _name, "and _parameter:", _parameter);
         
         // Check if a holon with this name already exists.
-        if (toAddress[_name] > address(0x0)) {
-            console.log("newHolon (Zoned): Holon already exists for _name:", _name, "at address:", uint256(uint160(toAddress[_name])));
-            return toAddress[_name];
-        }
+        // //#TODO: Should people be able to replace holons in their chats?
+        // if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
+        //    return toAddress[_name];
         
         console.log("newHolon (Zoned): Deploying new Zoned contract...");
         Zoned newholon = new Zoned(creatorUserId, msg.sender, _name, _parameter);

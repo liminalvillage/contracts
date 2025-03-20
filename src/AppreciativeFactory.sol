@@ -31,9 +31,9 @@ contract AppreciativeFactory {
 
    function newHolon(string memory creatorUserId, string memory _name, uint  _parameter) public returns (address)
     {
-        //This is required by tests to return the same address. NOTE: it enforces unique names for every holon created.
-        if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
-           return toAddress[_name];
+        // //#TODO: Should people be able to replace holons in their chats?
+        // if (toAddress[_name] > address(0x0)) //An holon with the same name already exists
+        //    return toAddress[_name];
 
         // Those parameters are coming from the factory: 
         // _name, _creatorUserId, _parameter
