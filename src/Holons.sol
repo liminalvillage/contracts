@@ -16,13 +16,38 @@ pragma solidity ^0.8;
     Peer Production License for more details.
  */
 import "forge-std/console.sol";
+import "./SplitterFactory.sol";
 
 contract Holons {
 
     mapping (address => address[]) private holons;
     mapping (string => address) public toAddress;   //NOTE: Remove on deploy
+    address public managedFactory;
+    address public zonedFactory;
 
     event NewHolon (string name, address addr);
+
+    // Setter for both factories at once
+    // #TODO: Set modifiers
+    function setFactories(address _managedFactory, address _zonedFactory) public {
+        require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
+        require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
+        
+        managedFactory = _managedFactory;
+        zonedFactory = _zonedFactory;
+        
+    }
+    // Individual setters if needed
+    // #TODO: Set modifiers
+    function setManagedFactory(address _managedFactory) public {
+        require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
+        managedFactory = _managedFactory;
+    }
+    // #TODO: Set modifiers
+    function setZonedFactory(address _zonedFactory) public {
+        require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
+        zonedFactory = _zonedFactory;
+    }
 
     function newHolon(string memory _flavor, string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
         require(flavors[_flavor] != address(0), "Flavor with this name does not exist");
@@ -31,7 +56,7 @@ contract Holons {
         
         console.log("newHolon: Calling delegatecall on flavorAddress with parameters:", _name, _parameter);
         (bool success, bytes memory result) = flavorAddress.delegatecall(
-            abi.encodeWithSignature("newHolon(string,string,uint256)", _creatorUserId, _name, _parameter)
+            abi.encodeWithSignature("newHolon(string,string,uint256,address,address)", _creatorUserId, _name, _parameter, managedFactory, zonedFactory)
         );
         console.log("newHolon: Delegatecall completed. Success:", success);
         require(success, "Holon creation failed");
@@ -43,13 +68,24 @@ contract Holons {
         
         return holonAddress;
     }
-    function newHolonBundle(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address){
-        // 1. Create splitter by default
-        // 2. Create managed and zoned and add it to the splitter list of contracts
-        // 3. Split commands in the bot so we know which action goes to: 
-            // 1. Spliter - change split mostly
-            // 2. Managed - internal chat members
-            // 3. Zoned - external members and groups 
+    function newHolonBundle(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
+        console.log("Holons.newHolonBundle: Started for name:", _name);
+
+        string memory _flavor = "Splitter";
+        address flavorAddress = flavors[_flavor];
+        console.log("Holons.newHolonBundle: Using SplitterFactory at:", flavorAddress);
+        require(flavorAddress != address(0), "SplitterFactory not set");
+        
+        // Direct call instead of delegatecall
+        SplitterFactory factory = SplitterFactory(flavorAddress);
+        address splitterAddress = factory.createSplitter(_creatorUserId, _name, _parameter, managedFactory, zonedFactory);
+        
+        // Store address in our own mapping
+        toAddress[_name] = splitterAddress;
+        console.log("Holons.newHolonBundle: Updated toAddress mapping:", toAddress[_name]);
+        
+        emit NewHolon(_name, splitterAddress);
+        return splitterAddress;
     }
     mapping (string => address) private flavors;
     string[] public knownflavors;

@@ -50,6 +50,23 @@ contract ManagedFactory {
 
         return addr;
     }
+    function createManaged(
+        string memory _creatorUserId, 
+        string memory _name
+    ) public returns (address) {
+        Managed newholon = new Managed(msg.sender, _name);
+        address addr = address(newholon);
+        
+        // Add to holon lists (if applicable)
+        holons[address(0)].push(addr);
+        holons[msg.sender].push(addr);
+        
+        // Store in factory's mapping
+        toAddress[_name] = addr;
+        
+        emit NewHolon(_name, addr);
+        return addr;
+    }
 
     /// @dev Lists every holons ever created
     /// @return an array containing the address of every holon ever created.

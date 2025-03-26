@@ -94,6 +94,25 @@ contract ZonedFactory {
     /// @dev Lists every holons ever created
     /// @return an array containing the address of every holon ever created.
 
+    function createZoned(
+        string memory _creatorUserId, 
+        string memory _name, 
+        uint _parameter
+    ) public returns (address) {
+        Zoned newholon = new Zoned(_creatorUserId, msg.sender, _name, _parameter);
+        address addr = address(newholon);
+        
+        // Add to holon lists (if applicable)
+        holons[address(0)].push(addr);
+        holons[msg.sender].push(addr);
+        
+        // Store in factory's mapping
+        toAddress[_name] = addr;
+        
+        emit NewHolon(_name, addr);
+        return addr;
+    }
+
     function listHolons() external view returns (address[] memory ){
         return holons[address(0)];
     }

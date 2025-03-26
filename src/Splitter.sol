@@ -2,6 +2,8 @@
 pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "./ZonedFactory.sol";
 // import "openzeppelin/contracts/access/Ownable.sol";
 
 /*
@@ -20,9 +22,12 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
  */
 import "./IHolonFactory.sol";
 import "./Holon.sol";
+import "./ManagedFactory.sol";
 import "forge-std/console.sol";
 
+
 contract Splitter is Holon {
+    using Strings for string;
    
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     string[] public userIds; // list of userIds
@@ -37,16 +42,90 @@ contract Splitter is Holon {
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     address public botAddress;
     // string public flavor;
-    constructor (address _creator, string  memory _name, uint _parameter)
-    {
-        name = _name;
-        creator = _creator;
-        flavor = "Splitter";
-        owner = _creator;
-        // temporairly, for testing purposes: 
-        // botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // localhost
-        botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
-        console.log("Splitter.constructor: Set owner to creator with address: ", _creator);    
+    address public managedFactory;
+    address public zonedFactory;
+    string public creatorUserId;
+
+    // have a way to find apporpriate contracts ( Managed or Zoned currently ) by their names - chat.id + "_managed"
+    mapping(string => address) public contractsByType;
+
+constructor(
+    address _owner,
+    string memory _creatorUserId,
+    string memory _name,
+    uint _parameter,
+    address _managedFactory,
+    address _zonedFactory
+) {
+    console.log("Splitter.constructor: ENTRY");
+    console.log("Splitter.constructor: Owner:", _owner);
+    console.log("Splitter.constructor: Creator:", _creatorUserId);
+    console.log("Splitter.constructor: Name:", _name);
+    console.log("Splitter.constructor: Parameter:", _parameter);
+    console.log("Splitter.constructor: ManagedFactory:", _managedFactory);
+    console.log("Splitter.constructor: ZonedFactory:", _zonedFactory);
+    
+    owner = _owner;
+    creatorUserId = _creatorUserId;
+    name = _name;
+    managedFactory = _managedFactory;
+    zonedFactory = _zonedFactory;
+    
+    console.log("Splitter.constructor: SUCCESS");
+}
+    // Set factory addresses
+    // #TODO: 
+    function setFactories(address _managedFactory, address _zonedFactory) public {
+        managedFactory = _managedFactory;
+        zonedFactory = _zonedFactory;
+    }
+    // Function to create managed contract
+    function createManagedContract(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
+        require(managedFactory != address(0), "ManagedFactory not set");
+        
+        // Direct call instead of delegatecall
+        ManagedFactory factory = ManagedFactory(managedFactory);
+        address managedAddress = factory.createManaged(_creatorUserId, _name);
+        
+        // Store in Splitter's mapping
+        contractsByType[string.concat(_name, "_managed")] = managedAddress;
+        
+        return managedAddress;
+    }
+
+    // Function to create Zoned contract
+    function createZonedContract(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
+        require(zonedFactory != address(0), "ZonedFactory not set");
+        
+        // Direct call instead of delegatecall
+        ZonedFactory factory = ZonedFactory(zonedFactory);
+        address zonedAddress = factory.createZoned(_creatorUserId, _name, _parameter);
+        
+        // Store in Splitter's mapping
+        contractsByType[string.concat(_name, "_zoned")] = zonedAddress;
+        
+        return zonedAddress;
+    }
+
+    function createChildContracts(string memory _creatorUserId, string memory _baseName, uint _parameter) internal {
+        address managed = createManagedContract(_creatorUserId, string.concat(_baseName, "_managed"), _parameter);
+        address zoned = createZonedContract(_creatorUserId, string.concat(_baseName, "_zoned"), _parameter);
+        
+        // Store in mapping using full names with base name prefix
+        contractsByType[string.concat(_baseName, "_managed")] = managed;
+        contractsByType[string.concat(_baseName, "_zoned")] = zoned;
+        
+        // Emit an event with the addresses
+        // emit ChildContractsCreated(managed, zoned);
+    }
+
+    // Function for routing commands by contract name
+    function routeCommand(string memory contractName, bytes memory data) public returns (bool, bytes memory) {
+        address targetContract = contractsByType[contractName];
+        require(targetContract != address(0), "Target contract not found");
+        
+        (bool success, bytes memory result) = targetContract.call(data);
+        return (success, result);
     }
 
     // Only the creator can add members
