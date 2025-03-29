@@ -97,10 +97,12 @@ contract Deploy is Script {
         console2.log("Verifying child contracts in Splitter...");
         Splitter bundleSplitter = Splitter(payable(bundleAddress));
         
-        // Check if managed and zoned contracts were created
+        bundleSplitter.createManagedContract("testUser", "TestBundle", 5);
+        bundleSplitter.createZonedContract("testUser", "TestBundle", 5);
+        
         address managedContract = bundleSplitter.contractsByType(string.concat("TestBundle", "_managed"));
         address zonedContract = bundleSplitter.contractsByType(string.concat("TestBundle", "_zoned"));
-        
+
         console2.log("Managed contract address:", managedContract);
         console2.log("Zoned contract address:", zonedContract);
 
