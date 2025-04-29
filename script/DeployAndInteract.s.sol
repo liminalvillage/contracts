@@ -20,7 +20,7 @@ pragma solidity ^0.8.0;
 // /////////////////////////////////////////////
 // contract TestToken {
 //     string public name = "TestToken";
-//     string public symbol = "TTK";
+//     string public symbol = "TTK";s
 //     uint8 public decimals = 18;
 //     uint256 public totalSupply;
     

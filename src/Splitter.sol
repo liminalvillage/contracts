@@ -49,6 +49,15 @@ contract Splitter is Holon {
     // have a way to find apporpriate contracts ( Managed or Zoned currently ) by their names - chat.id + "_managed"
     mapping(string => address) public contractsByType;
 
+    // New contract-based split storage
+    uint public internalContractSplitPercentage;
+    uint public externalContractSplitPercentage;
+
+    event FundsForwarded(address, address, uint256);
+    event ChildRewardTriggered(address, address, uint256);
+    
+
+
 constructor(
     address _owner,
     string memory _creatorUserId,
@@ -108,15 +117,10 @@ constructor(
     }
 
     function createChildContracts(string memory _creatorUserId, string memory _baseName, uint _parameter) internal {
-        address managed = createManagedContract(_creatorUserId, string.concat(_baseName, "_managed"), _parameter);
-        address zoned = createZonedContract(_creatorUserId, string.concat(_baseName, "_zoned"), _parameter);
+        address managed = createManagedContract(_creatorUserId, _baseName, _parameter);
+        address zoned = createZonedContract(_creatorUserId, _baseName, _parameter);
         
-        // Store in mapping using full names with base name prefix
-        contractsByType[string.concat(_baseName, "_managed")] = managed;
-        contractsByType[string.concat(_baseName, "_zoned")] = zoned;
-        
-        // Emit an event with the addresses
-        // emit ChildContractsCreated(managed, zoned);
+        console.log("createChildContract, baseName: ", _baseName);
     }
 
     // Function for routing commands by contract name
@@ -132,7 +136,7 @@ constructor(
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     function addMember(string memory _userId) external {
         // require(msg.sender == creator, "Only creator can add members");
-        require(msg.sender == botAddress, "Only creator can add members");
+        // require(msg.sender == botAddress, "Only creator can add members");
         if (isSplitterMember[_userId]) return; // Gently fail if user is already added
         isSplitterMember[_userId] = true;
         userIds.push(_userId);
@@ -141,7 +145,7 @@ constructor(
     // Add multiple members at once
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     function addMembers(string[] memory _userIds) external {
-        require(msg.sender == botAddress, "Only creator can add members");
+        // require(msg.sender == botAddress, "Only creator can add members");
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isSplitterMember[userId]) continue; // Skip if user is already added
@@ -233,6 +237,8 @@ constructor(
         for (uint i = 0; i < _userIds.length; i++) {
             percentages[_userIds[i]] = percentage[i];
         }
+
+        // mapping(string => address) public contractsByType;
     }
 
     function reward(address _tokenaddress, uint256 _tokenamount)
@@ -242,91 +248,128 @@ constructor(
     {
         bool etherreward;
         IERC20 token;
+        address tokenAddrForChildCall; // Address to pass to child reward function
 
         if (msg.value  > 0 && _tokenaddress == address(0)) {
             _tokenamount = msg.value;
             etherreward = true;
+            tokenAddrForChildCall = address(0); // Use address(0) for ETH
         }
          else {
-            //Load ERC20 token information
             token = IERC20(_tokenaddress);
             require (token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
+            etherreward = false;
+            tokenAddrForChildCall = _tokenaddress; // Use actual token address for ERC20
         }
         
-        uint256  amount;
+        console.log("reward - Starting address lookup");
+        string memory managedName = string.concat(name, "_managed");
+        string memory zonedName = string.concat(name, "_zoned");
+        address managedAddress = contractsByType[managedName];
+        address zonedAddress = contractsByType[zonedName];
+        console.log("  found managedAddress:", managedAddress);
+        console.log("  found zonedAddress:", zonedAddress);
 
-        for (uint256 i = 0; i < userIds.length; i++) {
-           
-                amount = (percentages[userIds[i]] * _tokenamount) / 100; //multiply given appreciation with unit reward
+        require(managedAddress != address(0), "Managed contract address not set");
+        require(zonedAddress != address(0), "Zoned contract address not set");
 
-            if (amount > 0 ){
-                address recipient = userIdToAddress[userIds[i]];
-                bool isContract = recipient.code.length > 0; // Check if the recipient is a contract
-                if (etherreward){
-                    if (hasClaimed[userIds[i]]) {
-                        (bool success, ) = payable(recipient).call{value: amount}("");
-                        require(success, "Transfer failed");
-                        emit MemberRewarded(
-                            address(this),
-                            recipient,
-                            amount,
-                            isContract,
-                            "ETH"
-                        );
-                    }
-                    else {
-                        this.depositEtherForUser(userIds[i], amount);
+        require(internalContractSplitPercentage + externalContractSplitPercentage == 100, "Contract split percentages not set or invalid");
 
-                        emit MemberRewarded(
-                            address(this),
-                            address(0),
-                            amount,
-                            isContract,
-                            "STORED_ETH"
-                        );
-                    }
-                }
-                else {
-                    if (hasClaimed[userIds[i]]) {
-                        token.transfer(recipient, amount);
-                        (bool success, ) = recipient.call(
-                            abi.encodeWithSignature(
-                                "reward(address,uint256)",
-                                _tokenaddress,
-                                amount
-                            )
-                        );
-                        require(success, "Unable to call the reward function");
+        uint256 managedAmount = (_tokenamount * internalContractSplitPercentage) / 100;
+        uint256 zonedAmount = (_tokenamount * externalContractSplitPercentage) / 100;
 
-                        emit MemberRewarded(
-                            address(this),
-                            recipient,
-                            amount,
-                            isContract,
-                            "ERC20"
-                        );
-                    } else {
-                        this.depositTokenForUser(userIds[i], _tokenaddress, amount);
+        uint256 calculatedTotal = managedAmount + zonedAmount;
+        if (calculatedTotal < _tokenamount) {
+             managedAmount += (_tokenamount - calculatedTotal);
+        }
 
-                        emit MemberRewarded(
-                            address(this),
-                            address(0),
-                            amount,
-                            isContract,
-                            "STORED_ERC20"
-                        );
-                    }
-                }
+        console.log("  Total Amount:", _tokenamount);
+        console.log("  Managed Share:", managedAmount);
+        console.log("  Zoned Share:", zonedAmount);
+
+        bool success;
+        bytes memory callData; // For low-level calls
+
+        // --- Start: Forward Funds & Emit ---
+        if (etherreward) {
+            if (managedAmount > 0) {
+                console.log("  Forwarding ETH to Managed:", managedAmount);
+                (success, ) = payable(managedAddress).call{value: managedAmount}("");
+                require(success, "ETH transfer to Managed failed");
+                emit FundsForwarded(managedAddress, address(0), managedAmount); // ETH uses address(0)
+            }
+            if (zonedAmount > 0) {
+                 console.log("  Forwarding ETH to Zoned:", zonedAmount);
+                (success, ) = payable(zonedAddress).call{value: zonedAmount}("");
+                require(success, "ETH transfer to Zoned failed");
+                emit FundsForwarded(zonedAddress, address(0), zonedAmount); // ETH uses address(0)
+            }
+        } else {
+            if (managedAmount > 0) {
+                console.log("  Forwarding ERC20 to Managed:", managedAmount);
+                success = token.transfer(managedAddress, managedAmount);
+                require(success, "ERC20 transfer to Managed failed");
+                emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
+            }
+             if (zonedAmount > 0) {
+                console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
+                success = token.transfer(zonedAddress, zonedAmount);
+                require(success, "ERC20 transfer to Zoned failed");
+                emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
             }
         }
-        // Emit a summary event after processing all members
+        // --- End: Forward Funds & Emit ---
+
+
+        // --- Start: Call Child Reward Functions & Emit ---
+        if (managedAmount > 0) {
+            if (!etherreward) {
+                // Only call reward() for ERC20 tokens
+                console.log("  Calling reward on Managed Contract with token amount:", managedAmount);
+                callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
+                (success, ) = managedAddress.call(callData);
+                require(success, "Call to Managed reward failed");
+            }
+            emit ChildRewardTriggered(managedAddress, tokenAddrForChildCall, managedAmount);
+        }
+
+        if (zonedAmount > 0) {
+            if (!etherreward) {
+                // Only call reward() for ERC20 tokens
+                console.log("  Calling reward on Zoned Contract with token amount:", zonedAmount);
+                callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
+                (success, ) = zonedAddress.call(callData);
+                require(success, "Call to Zoned reward failed");
+            }
+            emit ChildRewardTriggered(zonedAddress, tokenAddrForChildCall, zonedAmount);
+        }
+        // --- End: Call Child Reward Functions & Emit ---
+
+        // Remove or comment out the old RewardDistributed event
+        /*
         emit RewardDistributed(
             address(this),
             _tokenamount,
-            userIds.length,
+            userIds.length, // No longer relevant
             etherreward ? "ETH" : "ERC20"
         );
+        */
     }
    
+    // Also add a debug function to view mappings
+    function debugGetContractAddress(string memory contractKey) public view returns (address) {
+        return contractsByType[contractKey];
+    }
 
+    function setContractSplit(uint _internalPercentage, uint _externalPercentage) public {
+        // Authorization: Ensure only the authorized bot address can set the split
+        // require(owner == botAddress, "Only splitter owner can set the contract split"); // Using the same authorization as setSplit
+
+        // Validation: Check if the percentages sum up to 100
+        require(_internalPercentage + _externalPercentage == 100, "Total percentage must be 100");
+
+        // Storage: Assign the validated percentages to the dedicated state variables
+        internalContractSplitPercentage = _internalPercentage;
+        externalContractSplitPercentage = _externalPercentage;
+    }
 }
