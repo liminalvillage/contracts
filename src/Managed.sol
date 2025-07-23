@@ -46,7 +46,7 @@ contract Managed is Holon {
 
     // Only the creator can add members
     function addMember(string memory _userId) external {
-        require(msg.sender == creator, "Only creator can add members");
+        // require(msg.sender == creator, "Only creator can add members");
         if (isManagedMember[_userId]) return; // Gently fail if user is already added
         isManagedMember[_userId] = true;
         userIds.push(_userId);

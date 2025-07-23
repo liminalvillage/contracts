@@ -53,6 +53,10 @@ contract Splitter is Holon {
     uint public internalContractSplitPercentage;
     uint public externalContractSplitPercentage;
 
+    // Add these at the top of the contract with other state variables
+    string[] private contractKeys;  // Array to store all contract keys
+    mapping(string => bool) private isKeyAdded;  // To track if a key is already in the array
+
     event FundsForwarded(address, address, uint256);
     event ChildRewardTriggered(address, address, uint256);
     
@@ -92,12 +96,18 @@ constructor(
     function createManagedContract(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
         require(managedFactory != address(0), "ManagedFactory not set");
         
-        // Direct call instead of delegatecall
         ManagedFactory factory = ManagedFactory(managedFactory);
         address managedAddress = factory.createManaged(_creatorUserId, _name);
         
         // Store in Splitter's mapping
-        contractsByType[string.concat(_name, "_managed")] = managedAddress;
+        string memory key = string.concat(_name, "_managed");
+        contractsByType[key] = managedAddress;
+        
+        // Add key to array if not already added
+        if (!isKeyAdded[key]) {
+            contractKeys.push(key);
+            isKeyAdded[key] = true;
+        }
         
         return managedAddress;
     }
@@ -106,12 +116,18 @@ constructor(
     function createZonedContract(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
         require(zonedFactory != address(0), "ZonedFactory not set");
         
-        // Direct call instead of delegatecall
         ZonedFactory factory = ZonedFactory(zonedFactory);
         address zonedAddress = factory.createZoned(_creatorUserId, _name, _parameter);
         
         // Store in Splitter's mapping
-        contractsByType[string.concat(_name, "_zoned")] = zonedAddress;
+        string memory key = string.concat(_name, "_zoned");
+        contractsByType[key] = zonedAddress;
+        
+        // Add key to array if not already added
+        if (!isKeyAdded[key]) {
+            contractKeys.push(key);
+            isKeyAdded[key] = true;
+        }
         
         return zonedAddress;
     }
@@ -269,7 +285,7 @@ constructor(
         address zonedAddress = contractsByType[zonedName];
         console.log("  found managedAddress:", managedAddress);
         console.log("  found zonedAddress:", zonedAddress);
-
+        
         require(managedAddress != address(0), "Managed contract address not set");
         require(zonedAddress != address(0), "Zoned contract address not set");
 
@@ -371,5 +387,35 @@ constructor(
         // Storage: Assign the validated percentages to the dedicated state variables
         internalContractSplitPercentage = _internalPercentage;
         externalContractSplitPercentage = _externalPercentage;
+    }
+
+    // Add these new functions to list contracts
+    function getContractKeys() public view returns (string[] memory) {
+        return contractKeys;
+    }
+
+    function getContractAddresses() public view returns (string[] memory, address[] memory) {
+        string[] memory keys = new string[](contractKeys.length);
+        address[] memory addresses = new address[](contractKeys.length);
+        
+        for (uint i = 0; i < contractKeys.length; i++) {
+            keys[i] = contractKeys[i];
+            addresses[i] = contractsByType[contractKeys[i]];
+        }
+        
+        return (keys, addresses);
+    }
+
+    // Add a function to get contract info by key
+    function getContractInfo(string memory key) public view returns (address) {
+        return contractsByType[key];
+    }
+
+    receive() external payable override {
+        reward(address(0), msg.value);
+    }
+
+    fallback() external payable override{
+        reward(address(0), msg.value);
     }
 }

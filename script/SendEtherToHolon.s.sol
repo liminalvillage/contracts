@@ -16,7 +16,7 @@ contract SendEtherToHolon is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Address of the deployed Holons contract
-        address holonsContractAddress = 0x23228469b3439d81DC64e3523068976201bA08C3;
+        address holonsContractAddress = 0xc9F60B3C7aD1F1DaBE8753Dcb7129C30123C217C;
         require(holonsContractAddress != address(0), "Invalid Holons contract address");
 
         // Initialize the Holons contract

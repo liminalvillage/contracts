@@ -46,7 +46,7 @@ import "forge-std/console.sol";
     uint256 public a;
     uint256 public b;
     uint256 public c;
-    uint256 [] public rewards;
+    uint256 [] public rewards;  
      //======================== Public holon variables
   
     uint public nzones;
@@ -69,7 +69,7 @@ import "forge-std/console.sol";
 
     //     nzones = _nzones;
     //     zone[tx.origin]= _nzones;
-    //     zonemembers[_nzones].push(tx.origin);
+    //     zonemembers[_nzones].push(tx.origin);    
 
 
     constructor (string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
@@ -99,8 +99,9 @@ import "forge-std/console.sol";
         botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
         isZonedMember[creatorUserId] = true;
         userIds.push(creatorUserId);
-        zonemembers[_nzones].push(creatorUserId);
-        zone[creatorUserId] = _nzones;
+        // commenting out to test if the group itself won't be part of the zones
+        // zonemembers[_nzones].push(creatorUserId);
+        // zone[creatorUserId] = _nzones;
         console.log("Zoned.constructor: Calling setRewardFunction with a, b, c =", a, b, c);
         setRewardFunction(creatorUserId, a, b, c);
         console.log("Zoned.constructor: setRewardFunction completed");
@@ -110,7 +111,7 @@ import "forge-std/console.sol";
     // constructor(string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
     //     name = _name;
     //     creator = _creator;
-    //     flavor = "Zoned";
+    //     flavor = "Zoned";    
     //     owner = _creator;
     // }
 
@@ -123,7 +124,7 @@ import "forge-std/console.sol";
     //#TODO: This needs to be overwritten
     // Add a single member (automatically to zone 0)
     function addMember(string memory senderUserId, string memory _userId) external {
-        require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
+        // require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
         
         if (isZonedMember[_userId]) return; // Gently fail if user is already added
         
@@ -138,7 +139,7 @@ import "forge-std/console.sol";
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     //#TODO: This needs to be overwritten
     function addMembers(string memory senderUserId, string[] memory _userIds) external {
-        require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
+        // require(msg.sender == creator || isZonedMember[senderUserId], "Only creator or existing members can add new members");
         
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
@@ -152,6 +153,22 @@ import "forge-std/console.sol";
             zonemembers[0].push(userId);
         }
     }
+
+    // Add federation member using federationId as userId
+    // This function is specifically designed for federation scenarios
+    function addFederationMember(string memory federationId) external {
+        require(msg.sender == creator || msg.sender == factory, "Only creator or factory can add federation members");
+        
+        if (isZonedMember[federationId]) return; // Gently fail if federation is already added
+        
+        isZonedMember[federationId] = true;
+        userIds.push(federationId);
+        
+        // Add to zone 0
+        zone[federationId] = 0;  
+        zonemembers[0].push(federationId);
+    }
+
     // Function to deposit Ether for a specific userID
     function depositEtherForUser(
         string memory _userId,
@@ -193,10 +210,10 @@ import "forge-std/console.sol";
     // Function for users to claim their Ether
     function claimEther(string memory _userId, address _beneficiary) internal {
         //#TODO: creator should become bot?
-        require(
-            msg.sender == creator,
-            "Only creator can submit an user claim Ether"
-        );
+        // require(
+        //     msg.sender == creator,
+        //     "Only creator can submit an user claim Ether"
+        // );
         //#TODO: Later this will be member address. 
         uint256 amount = etherBalance[_userId];
         require(_beneficiary != address(0), "Invalid beneficiary address");
@@ -211,10 +228,10 @@ import "forge-std/console.sol";
     // Function for users to claim their ERC20 tokens
     function claimTokens(string memory _userId, address _beneficiary) internal {
         //#TODO: creator should become bot?
-        require(
-            msg.sender == creator,
-            "Only creator can submit an user claim Tokens"
-        );
+        // require(
+        //     msg.sender == creator,
+        //     "Only creator can submit an user claim Tokens"
+        // );
         // Loop through all tokens and transfer to user
         address[] memory tokens = tokensOf[_userId];
         for (uint i = 0; i < tokensOf[_userId].length; i++) {
@@ -350,7 +367,8 @@ import "forge-std/console.sol";
         console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
         // only core members can change reward function
         require (msg.sender == creator || msg.sender == factory, "only creator or bot can change the reward function currently");
-        require(zone[senderUserId] == nzones, "member must be in the highest zone");
+        // commenting out temporairly
+        // require(zone[senderUserId] == nzones, "member must be in the highest zone");
 
         a = _a;
         b = _b;
@@ -386,8 +404,10 @@ import "forge-std/console.sol";
     /// @dev Explain to a developer any extra details
     /// @param Documents a parameter just like in doxygen (must be followed by parameter name)) private returns (uint zonereward)
     {
-        require(msg.sender == botAddress, "only creator can change the zones currently!");
-        require(zone[senderUserId] >= _zone, "members in lower zones cannot promote to higher zones");
+        // Commenting out temporairly
+        // require(msg.sender == botAddress, "only creator can change the zones currently!");
+        // Commenting out temporairly, as in who is going to promote the member if not the bot itself? Even then, the bot should not be in the zones
+        // require(zone[senderUserId] >= _zone, "members in lower zones cannot promote to higher zones");
         // TODO Cooloff period for nominations or validation of nomination
         require(isZonedMember[_userId], "only zone members can have their zones changed");
        
@@ -402,6 +422,31 @@ import "forge-std/console.sol";
         
         zone[_userId]= _zone;
         zonemembers[_zone].push(_userId);
+    }
+
+    /// @notice Removes a user from their current zone and membership
+    /// @param senderUserId The userId of the sender requesting the removal
+    /// @param _userId The userId to remove from their zone
+    function removeFromZone(string memory senderUserId, string memory _userId) public {
+        // Optionally restrict who can call this
+        // require(msg.sender == botAddress, "Only bot can remove from zone");
+
+        require(isZonedMember[_userId], "User is not a zone member");
+
+        uint currentZone = zone[_userId];
+
+        // Remove user from zonemembers[currentZone] array
+        for (uint256 i = 0; i < zonemembers[currentZone].length; i++) {
+            if (keccak256(abi.encodePacked(zonemembers[currentZone][i])) == keccak256(abi.encodePacked(_userId))) {
+                zonemembers[currentZone][i] = zonemembers[currentZone][zonemembers[currentZone].length - 1];
+                zonemembers[currentZone].pop();
+                break;
+            }
+        }
+
+        // Optionally, mark as not a member and clear zone
+        isZonedMember[_userId] = false;
+        zone[_userId] = 0; // or type(uint).max if you want to indicate "no zone"
     }
 
     function getZoneMembers(uint _zone) external view returns (string[] memory)

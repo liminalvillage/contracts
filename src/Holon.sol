@@ -139,7 +139,8 @@ contract Holon is Membrane{
 
       receive() 
         external 
-        payable 
+        payable
+        virtual
     {
         reward(address(0),msg.value);
     }
@@ -147,6 +148,7 @@ contract Holon is Membrane{
     fallback()
         external
         payable
+        virtual
     {
         reward(address(0),msg.value);
     }
