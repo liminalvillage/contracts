@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/Managed.sol";
+import "../../src/Managed.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract TestToken is ERC20 {

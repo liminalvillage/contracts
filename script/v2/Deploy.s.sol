@@ -3,15 +3,15 @@
 
 // import "forge-std/Script.sol";
 
-// import {SplitterFactory} from "../src/SplitterFactory.sol";
-// import {AppreciativeFactory} from "../src/AppreciativeFactory.sol";
-// import {ZonedFactory} from "../src/ZonedFactory.sol";
-// import {ManagedFactory} from "../src/ManagedFactory.sol";
-// import {Managed} from "../src/Managed.sol";
-// import {Holons} from "../src/Holons.sol";
-// import {Zoned} from "../src/Zoned.sol";
-// import {Splitter} from "../src/Splitter.sol";
-// import {TestToken} from "../src/TestToken.sol";
+// import {SplitterFactory} from "../../src/SplitterFactory.sol";
+// import {AppreciativeFactory} from "../../src/AppreciativeFactory.sol";
+// import {ZonedFactory} from "../../src/ZonedFactory.sol";
+// import {ManagedFactory} from "../../src/ManagedFactory.sol";
+// import {Managed} from "../../src/Managed.sol";
+// import {Holons} from "../../src/Holons.sol";
+// import {Zoned} from "../../src/Zoned.sol";
+// import {Splitter} from "../../src/Splitter.sol";
+// import {TestToken} from "../../src/TestToken.sol";
 
 // contract Deploy is Script {
 //     function run() external {
@@ -51,7 +51,7 @@
 //         console2.log("Holons deployed at:", address(holons));
 
 //         console2.log("Deploying Zoned...");
-//         Zoned zoned = new Zoned("123", msg.sender,"5", 1); // We don't need to deploy Zones like this
+//         Zoned zoned = new Zoned("creatorUserId", msg.sender,"5", 1);
 //         console2.log("Zoned deployed at:", address(zoned));
 
 //         console2.log("Deploying Splitter...");

@@ -8,9 +8,9 @@ dataSources:
     name: Holons.sol
     network: mainnet
     source:
-      address: "0xAbbbA8be2154c6BC2743C798B046677EF12e8f86"
+      address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
       abi: Holons.sol
-      startBlock: 7831350
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
