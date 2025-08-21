@@ -6,7 +6,7 @@ import "v3-core/contracts/libraries/FullMath.sol";
 import "forge-std/console.sol";
 
 /*
-    Copyright 2020, Roberto Valenti
+    Copyright 2020, Roberto Valenti, co-authored by Aleksa Stojanović
 
     This program is free software: you can use it, redistribute it and/or modify
     it under the terms of the Peer Production License as published by
@@ -68,37 +68,47 @@ contract Managed is Holon {
     }
 
     // Only the creator can set appreciation for members
-    function setUserAppreciation(
-        string memory _userId,
-        uint256 _appreciationAmount
-    ) external {
-        require(msg.sender == creator, "Only creator can set appreciation");
-        // Check that the new value is within the allowed cap.
-        require(_appreciationAmount <= maxAppreciation, "Appreciation value too high");
-        appreciation[_userId] = _appreciationAmount;
-        totalappreciation += _appreciationAmount;
+    function setUserAppreciation(string memory _userId, uint256 _amount) external onlyCreator {
+        require(_amount <= maxAppreciation, "Appreciation value too high");
+
+        uint256 prev = appreciation[_userId];
+        appreciation[_userId] = _amount;
+
+        // keep total in sync (no drift)
+        if (_amount >= prev) {
+            totalappreciation += (_amount - prev);
+        } else {
+            totalappreciation -= (prev - _amount);
+        }
     }
 
     //set appreciation for an array of users
-    function setAppreciation(
-        string[] memory _userIds,
-        uint256[] memory _appreciationAmounts
-    ) external {
-        // require(msg.sender == creator, "Only creator can set appreciation");
-        require(
-            _userIds.length == _appreciationAmounts.length,
-            "Array lengths do not match"
-        );
-        // Pre-check loops to revert at the beggining, not in the middle of execution
-        for (uint i = 0; i < _appreciationAmounts.length; i++) {
-            if (_appreciationAmounts[i] > maxAppreciation) {
-                require(_appreciationAmounts[i] <= maxAppreciation, "Appreciation value too high");
-            }
-        }
+    function setAppreciation(string[] memory _userIds, uint256[] memory _amounts) external onlyCreator {
+        require(_userIds.length == _amounts.length, "Array lengths do not match");
+
+        // 1) write provided pairs
         for (uint i = 0; i < _userIds.length; i++) {
-            appreciation[_userIds[i]] = _appreciationAmounts[i];
-            totalappreciation += _appreciationAmounts[i];
+            uint256 a = _amounts[i];
+            require(a <= maxAppreciation, "Appreciation value too high");
+            appreciation[_userIds[i]] = a;
         }
+
+        // 2) recompute canonical denominator across all members
+        _recomputeTotalAppreciation();
+    }
+
+    function _recomputeTotalAppreciation() internal {
+        uint256 n = userIds.length;
+        uint256 sum = 0;
+        for (uint i = 0; i < n; i++) {
+            sum += appreciation[userIds[i]];
+        }
+        totalappreciation = sum;
+    }
+
+    // Callable any time to “repair” totals
+    function recomputeTotalAppreciation() external onlyCreator {
+        _recomputeTotalAppreciation();
     }
 
     // Function to deposit Ether for a specific userID

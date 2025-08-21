@@ -18,11 +18,11 @@ contract SendTestTokenToHolon is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Address of the deployed Holons contract
-        address holonsContractAddress = 0x88777418972fB3F58489303d763d4DaF398A6527; // Replace with your actual address
+        address holonsContractAddress = 0x95be4F21fbA0383a88e048a33f9FA4795bBd8C71; // Replace with your actual address
         require(holonsContractAddress != address(0), "Invalid Holons contract address");
 
         // Address of the deployed TestToken contract
-        address testTokenAddress = 0x48288D0e3079A03f6EC1846554CFc58C2696Aaee; // Replace with your actual address
+        address testTokenAddress = 0xf11DA4F41899c5E6437cE32061F27C4580A6586F; // Replace with your actual address
         require(testTokenAddress != address(0), "Invalid TestToken contract address");
 
         // Initialize the Holons contract

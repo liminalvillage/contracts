@@ -11,8 +11,8 @@ interface IERC20 {
 
 contract CheckTokenBalance is Script {
     // Hardcoded variables for the token and account to check
-    address constant TOKEN_ADDRESS = 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6; // Replace with your token address
-    address constant ACCOUNT = 0x61c36a8d610163660E21a8b7359e1Cac0C9133e1;     // Replace with the account address
+    address constant TOKEN_ADDRESS = 0xf11DA4F41899c5E6437cE32061F27C4580A6586F; // Replace with your token address
+    address constant ACCOUNT = 0x1270BAF82a4e177B144E99BbEF12516c69a11218;     // Replace with the account address
 
     function run() external {
         //////////////////////////////////////////////////////////

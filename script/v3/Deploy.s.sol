@@ -16,6 +16,7 @@ import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract Deploy is Script {
     using Strings for string;
+    
     function run() external {
         // Start the broadcast using the deployer's private key
         uint256 deployerPrivateKeyHex = vm.envUint("PRIVATE_KEY");
@@ -24,9 +25,9 @@ contract Deploy is Script {
         console2.log("Deployer: ", deployerAddress);
         console2.log("deployerPrivateKey: ", deployerPrivateKey);
 
+        // Deploy factories first
         vm.startBroadcast(deployerPrivateKey);
-
-        // Deploy contracts
+        
         console2.log("Deploying ManagedFactory...");
         ManagedFactory managedFactory = new ManagedFactory();
         console2.log("ManagedFactory deployed at:", address(managedFactory));
@@ -42,17 +43,19 @@ contract Deploy is Script {
         console2.log("Deploying AppreciativeFactory...");
         AppreciativeFactory appreciativeFactory = new AppreciativeFactory();
         console2.log("AppreciativeFactory deployed at:", address(appreciativeFactory));
+        
+        vm.stopBroadcast();
 
-        console2.log("Deploying Managed...");
-        Managed managed = new Managed(msg.sender, "Managed");
-        console2.log("Managed deployed at:", address(managed));
-
+        // Deploy main contracts
+        vm.startBroadcast(deployerPrivateKey);
+        
         console2.log("Deploying Holons...");
         Holons holons = new Holons();
         console2.log("Holons deployed at:", address(holons));
 
-        // Set factories in Holons
-        holons.setFactories(address(managedFactory), address(zonedFactory));
+        console2.log("Deploying Managed...");
+        Managed managed = new Managed(msg.sender, "Managed");
+        console2.log("Managed deployed at:", address(managed));
 
         console2.log("Deploying Zoned...");
         Zoned zoned = new Zoned("creatorUserId", msg.sender,"5", 1);
@@ -65,6 +68,14 @@ contract Deploy is Script {
         console2.log("Deploying TestToken...");
         TestToken testToken = new TestToken(1_000_000 ether);
         console2.log("TestToken deployed at:", address(testToken));
+        
+        vm.stopBroadcast();
+
+        // Set factories and flavors
+        vm.startBroadcast(deployerPrivateKey);
+        
+        // Set factories in Holons
+        holons.setFactories(address(managedFactory), address(zonedFactory));
         
         // Set flavors in Holons contract
         console2.log("Setting Splitter flavor...");
@@ -82,6 +93,11 @@ contract Deploy is Script {
         console2.log("Setting Managed flavor...");
         holons.newFlavor("Managed", address(managedFactory));
         console2.log("Managed flavor set to:", address(managedFactory));
+        
+        vm.stopBroadcast();
+
+        // Test interactions
+        vm.startBroadcast(deployerPrivateKey);
         
         // Verify the child contracts are set correctly
         // Test creating a holon bundle
