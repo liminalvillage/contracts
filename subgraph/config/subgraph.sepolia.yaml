@@ -6,7 +6,7 @@ schema:
 dataSources:
   - kind: ethereum
     name: Holons.sol
-    network: mainnet
+    network: sepolia
     source:
       address: "0xAbbbA8be2154c6BC2743C798B046677EF12e8f86"
       abi: Holons.sol
@@ -29,11 +29,11 @@ dataSources:
       file: ./src/holons-sol.ts
 
 templates:
-  - name: Holon
+  - name: Splitter
     kind: ethereum/contract
-    network: mainnet
+    network: sepolia
     source:
-      abi: Holon
+      abi: Splitter
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -44,8 +44,54 @@ templates:
         - RewardDistribution
         - MemberReward       
       abis:
-        - name: Holon
-          file: ./abis/Holon.json
+        - name: Splitter
+          file: ./abis/Splitter.json
+      eventHandlers:
+        - event: RewardDistributed(indexed address,uint256,uint256,string)
+          handler: handleRewardDistributed
+        - event: MemberRewarded(indexed address,indexed address,uint256,bool,string)
+          handler: handleMemberRewarded
+
+  - name: Zoned
+    kind: ethereum/contract
+    network: sepolia
+    source:
+      abi: Zoned
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/holon-template.ts
+      entities:
+        - HolonContract
+        - RewardDistribution
+        - MemberReward       
+      abis:
+        - name: Zoned
+          file: ./abis/Zoned.json
+      eventHandlers:
+        - event: RewardDistributed(indexed address,uint256,uint256,string)
+          handler: handleRewardDistributed
+        - event: MemberRewarded(indexed address,indexed address,uint256,bool,string)
+          handler: handleMemberRewarded
+
+  - name: Managed
+    kind: ethereum/contract
+    network: sepolia
+    source:
+      abi: Managed
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/holon-template.ts
+      entities:
+        - HolonContract
+        - RewardDistribution
+        - MemberReward       
+      abis:
+        - name: Managed
+          file: ./abis/Managed.json
       eventHandlers:
         - event: RewardDistributed(indexed address,uint256,uint256,string)
           handler: handleRewardDistributed

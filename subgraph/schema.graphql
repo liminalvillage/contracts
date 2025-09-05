@@ -1,52 +1,97 @@
-type NewFlavor @entity(immutable: true) {
-  id: Bytes!
-  flavor: Bytes! # address
-  name: String! # string
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type NewHolon @entity(immutable: true) {
-  id: Bytes!
-  name: String! # string
-  addr: Bytes! # address
-  flavor: String! # string
-  creator: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type HolonContract @entity {
-  id: Bytes!
+type Holon @entity {
+  id: ID!
   name: String!
-  creator: Bytes!
+  address: Bytes!
+  creatorUserId: String!
+  holonType: HolonType!
+  parameter: BigInt # Only for Zoned holons
   createdAt: BigInt!
-  rewardDistributions: [RewardDistribution!]! @derivedFrom(field: "holon")
+  blockNumber: BigInt!
+  txHash: Bytes!
+  
+  # Relationships
+  splitter: Splitter
+  managed: Managed
+  zoned: Zoned
 }
 
-type RewardDistribution @entity(immutable: true) {
-  id: Bytes!
-  holon: HolonContract!
-  contractAddress: Bytes!
-  amount: BigInt!
-  totalMembers: BigInt!
-  rewardType: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
+enum HolonType {
+  SPLITTER
+  MANAGED
+  ZONED
 }
 
-type MemberReward @entity(immutable: true) {
-  id: Bytes!
-  holon: HolonContract!
-  from: Bytes!
-  to: Bytes!
-  amount: BigInt!
-  isContract: Boolean!
-  rewardType: String!
+type Splitter @entity {
+  id: ID! # Contract address
+  name: String!
+  address: Bytes!
+  creatorUserId: String!
+  parameter: BigInt!
+  createdAt: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
+  txHash: Bytes!
+  
+  # Child holons
+  managedHolon: Managed
+  zonedHolon: Zoned
+}
+
+type Managed @entity {
+  id: ID! # Contract address
+  name: String!
+  address: Bytes!
+  creatorUserId: String!
+  creator: Bytes! # msg.sender from factory
+  createdAt: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  
+  # Parent relationship
+  parentSplitter: Splitter
+}
+
+type Zoned @entity {
+  id: ID! # Contract address
+  name: String!
+  address: Bytes!
+  creatorUserId: String!
+  creator: Bytes! # msg.sender from factory
+  parameter: BigInt!
+  createdAt: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  
+  # Parent relationship
+  parentSplitter: Splitter
+}
+
+# Factory tracking entities
+type HolonsContract @entity {
+  id: ID! # Contract address
+  totalHolons: BigInt!
+  totalSplitters: BigInt!
+  createdAt: BigInt!
+}
+
+type ManagedFactory @entity {
+  id: ID! # Contract address
+  totalManaged: BigInt!
+  createdAt: BigInt!
+}
+
+type ZonedFactory @entity {
+  id: ID! # Contract address
+  totalZoned: BigInt!
+  createdAt: BigInt!
+}
+
+type FundsForwarded @entity {
+  id: ID!
+  splitterAddress: Bytes!
+  fromAddress: Bytes!
+  toAddress: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
 }

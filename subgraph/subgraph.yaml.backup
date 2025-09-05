@@ -16,63 +16,17 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        # - NewFlavor
+        - NewFlavor
         - NewHolon
       abis:
         - name: Holons.sol
           file: ./abis/Holons.json
       eventHandlers:
-        # - event: NewFlavor(indexed address,string)
-        #   handler: handleNewFlavor
+        - event: NewFlavor(indexed address,string)
+          handler: handleNewFlavor
         - event: NewHolon(string,address)
           handler: handleNewHolon
-      file: ./src/holons.ts
-
-  # ManagedFactory
-  - kind: ethereum/contract
-    name: ManagedFactory
-    network: mainnet
-    source:
-      address: "0x057ef64e23666f000b34ae31332854acbd1c8544"
-      abi: ManagedFactory
-      startBlock: 0
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - Managed
-        - ManagedFactory
-      abis:
-        - name: ManagedFactory
-          file: ./abis/ManagedFactory.json
-      eventHandlers:
-        - event: ManagedContractCreated(indexed address,indexed string,string)
-          handler: handleManagedContractCreated
-      file: ./src/managedFactory.ts
-
-  # ZonedFactory
-  - kind: ethereum/contract
-    name: ZonedFactory
-    network: mainnet
-    source:
-      address: "0x261d8c5e9742e6f7f1076fa1f560894524e19cad"
-      abi: ZonedFactory
-      startBlock: 0
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - Zoned
-        - ZonedFactory
-      abis:
-        - name: ZonedFactory
-          file: ./abis/ZonedFactory.json
-      eventHandlers:
-        - event: ZonedContractCreated(indexed address,indexed string,string,uint256)
-          handler: handleZonedContractCreated
-      file: ./src/zonedFactory.ts
+      file: ./src/holons-sol.ts
 
 templates:
   - name: Splitter
@@ -84,7 +38,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/splitter.ts
+      file: ./src/splitter-template.ts
       entities:
         - HolonContract
         - RewardDistribution
@@ -93,12 +47,14 @@ templates:
         - name: Splitter
           file: ./abis/Splitter.json
       eventHandlers:
-        - event: ChildHolonCreated(indexed address,indexed string,string)
-          handler: handleChildHolonCreated
         - event: RewardDistributed(indexed address,uint256,uint256,string)
           handler: handleRewardDistributed
         - event: MemberRewarded(indexed address,indexed address,uint256,bool,string)
           handler: handleMemberRewarded
+        - event: FundsForwarded(address,address,uint256)
+          handler: handleFundsForwarded
+        - event: ChildRewardTriggered(address,address,uint256)
+          handler: handleChildRewardTriggered
 
   - name: Zoned
     kind: ethereum/contract
@@ -109,7 +65,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/splitter.ts
+      file: ./src/zoned-template.ts
       entities:
         - HolonContract
         - RewardDistribution
@@ -132,7 +88,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/splitter.ts
+      file: ./src/managed-template.ts
       entities:
         - HolonContract
         - RewardDistribution

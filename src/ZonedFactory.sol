@@ -25,6 +25,7 @@ contract ZonedFactory {
     mapping (string => address) public toAddress;   //NOTE: Remove on deploy
 
     event NewHolon (string name, address addr);
+    event ZonedContractCreated(address indexed contractAddress, string indexed creatorUserId, string name, uint parameter);
  
     /// @dev Creates an new holon and adds it to the global and personal list
     /// @param _name The name of the holon.
@@ -110,6 +111,7 @@ contract ZonedFactory {
         toAddress[_name] = addr;
         
         emit NewHolon(_name, addr);
+        emit ZonedContractCreated(addr, _creatorUserId, _name, _parameter);
         return addr;
     }
 

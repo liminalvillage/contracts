@@ -58,8 +58,7 @@ contract Splitter is Holon {
     mapping(string => bool) private isKeyAdded;  // To track if a key is already in the array
 
     event FundsForwarded(address, address, uint256);
-    event ChildRewardTriggered(address, address, uint256);
-    
+    event ChildHolonCreated(address indexed childAddress, string indexed childType, string name);
 
 
 constructor(
@@ -108,7 +107,7 @@ constructor(
             contractKeys.push(key);
             isKeyAdded[key] = true;
         }
-        
+        emit ChildHolonCreated(managedAddress, "MANAGED", name);
         return managedAddress;
     }
 
@@ -128,7 +127,7 @@ constructor(
             contractKeys.push(key);
             isKeyAdded[key] = true;
         }
-        
+        emit ChildHolonCreated(zonedAddress, "ZONED", name);
         return zonedAddress;
     }
 
@@ -257,6 +256,121 @@ constructor(
         // mapping(string => address) public contractsByType;
     }
 
+    // function reward(address _tokenaddress, uint256 _tokenamount)
+    //     public
+    //     payable
+    //     override
+    // {
+    //     bool etherreward;
+    //     IERC20 token;
+    //     address tokenAddrForChildCall; // Address to pass to child reward function
+
+    //     if (msg.value  > 0 && _tokenaddress == address(0)) {
+    //         _tokenamount = msg.value;
+    //         etherreward = true;
+    //         tokenAddrForChildCall = address(0); // Use address(0) for ETH
+    //     }
+    //      else {
+    //         token = IERC20(_tokenaddress);
+    //         require (token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
+    //         etherreward = false;
+    //         tokenAddrForChildCall = _tokenaddress; // Use actual token address for ERC20
+    //     }
+        
+    //     console.log("reward - Starting address lookup");
+    //     string memory managedName = string.concat(name, "_managed");
+    //     string memory zonedName = string.concat(name, "_zoned");
+    //     address managedAddress = contractsByType[managedName];
+    //     address zonedAddress = contractsByType[zonedName];
+    //     console.log("  found managedAddress:", managedAddress);
+    //     console.log("  found zonedAddress:", zonedAddress);
+        
+    //     require(managedAddress != address(0), "Managed contract address not set");
+    //     require(zonedAddress != address(0), "Zoned contract address not set");
+
+    //     require(internalContractSplitPercentage + externalContractSplitPercentage == 100, "Contract split percentages not set or invalid");
+
+    //     uint256 managedAmount = (_tokenamount * internalContractSplitPercentage) / 100;
+    //     uint256 zonedAmount = (_tokenamount * externalContractSplitPercentage) / 100;
+
+    //     uint256 calculatedTotal = managedAmount + zonedAmount;
+    //     if (calculatedTotal < _tokenamount) {
+    //          managedAmount += (_tokenamount - calculatedTotal);
+    //     }
+
+    //     console.log("  Total Amount:", _tokenamount);
+    //     console.log("  Managed Share:", managedAmount);
+    //     console.log("  Zoned Share:", zonedAmount);
+
+    //     bool success;
+    //     bytes memory callData; // For low-level calls
+
+    //     // --- Start: Forward Funds & Emit ---
+    //     if (etherreward) {
+    //         if (managedAmount > 0) {
+    //             console.log("  Forwarding ETH to Managed:", managedAmount);
+    //             (success, ) = payable(managedAddress).call{value: managedAmount}("");
+    //             require(success, "ETH transfer to Managed failed");
+    //             emit FundsForwarded(managedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, managedAmount); // ETH uses special address
+    //         }
+    //         if (zonedAmount > 0) {
+    //              console.log("  Forwarding ETH to Zoned:", zonedAmount);
+    //             (success, ) = payable(zonedAddress).call{value: zonedAmount}("");
+    //             require(success, "ETH transfer to Zoned failed");
+    //             emit FundsForwarded(zonedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, zonedAmount); // ETH uses special address
+    //         }
+    //     } else {
+    //         if (managedAmount > 0) {
+    //             console.log("  Forwarding ERC20 to Managed:", managedAmount);
+    //             success = token.transfer(managedAddress, managedAmount);
+    //             require(success, "ERC20 transfer to Managed failed");
+    //             emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
+    //         }
+    //          if (zonedAmount > 0) {
+    //             console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
+    //             success = token.transfer(zonedAddress, zonedAmount);
+    //             require(success, "ERC20 transfer to Zoned failed");
+    //             emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
+    //         }
+    //     }
+    //     // --- End: Forward Funds & Emit ---
+
+
+    //     // --- Start: Call Child Reward Functions & Emit ---
+    //     if (managedAmount > 0) {
+    //         if (!etherreward) {
+    //             // Only call reward() for ERC20 tokens
+    //             console.log("  Calling reward on Managed Contract with token amount:", managedAmount);
+    //             callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
+    //             (success, ) = managedAddress.call(callData);
+    //             require(success, "Call to Managed reward failed");
+    //         }
+    //         emit ChildRewardTriggered(managedAddress, tokenAddrForChildCall, managedAmount);
+    //     }
+
+    //     if (zonedAmount > 0) {
+    //         if (!etherreward) {
+    //             // Only call reward() for ERC20 tokens
+    //             console.log("  Calling reward on Zoned Contract with token amount:", zonedAmount);
+    //             callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
+    //             (success, ) = zonedAddress.call(callData);
+    //             require(success, "Call to Zoned reward failed");
+    //         }
+    //         emit ChildRewardTriggered(zonedAddress, tokenAddrForChildCall, zonedAmount);
+    //     }
+    //     // --- End: Call Child Reward Functions & Emit ---
+
+    //     // Remove or comment out the old RewardDistributed event
+    //     /*
+    //     emit RewardDistributed(
+    //         address(this),
+    //         _tokenamount,
+    //         userIds.length, // No longer relevant
+    //         etherreward ? "ETH" : "ERC20"
+    //     );
+    //     */
+    // }
+
     function reward(address _tokenaddress, uint256 _tokenamount)
         public
         payable
@@ -271,7 +385,7 @@ constructor(
             etherreward = true;
             tokenAddrForChildCall = address(0); // Use address(0) for ETH
         }
-         else {
+        else {
             token = IERC20(_tokenaddress);
             require (token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
             etherreward = false;
@@ -296,7 +410,7 @@ constructor(
 
         uint256 calculatedTotal = managedAmount + zonedAmount;
         if (calculatedTotal < _tokenamount) {
-             managedAmount += (_tokenamount - calculatedTotal);
+            managedAmount += (_tokenamount - calculatedTotal);
         }
 
         console.log("  Total Amount:", _tokenamount);
@@ -306,70 +420,48 @@ constructor(
         bool success;
         bytes memory callData; // For low-level calls
 
-        // --- Start: Forward Funds & Emit ---
-        if (etherreward) {
-            if (managedAmount > 0) {
-                console.log("  Forwarding ETH to Managed:", managedAmount);
-                (success, ) = payable(managedAddress).call{value: managedAmount}("");
-                require(success, "ETH transfer to Managed failed");
-                emit FundsForwarded(managedAddress, address(0), managedAmount); // ETH uses address(0)
-            }
-            if (zonedAmount > 0) {
-                 console.log("  Forwarding ETH to Zoned:", zonedAmount);
-                (success, ) = payable(zonedAddress).call{value: zonedAmount}("");
-                require(success, "ETH transfer to Zoned failed");
-                emit FundsForwarded(zonedAddress, address(0), zonedAmount); // ETH uses address(0)
-            }
-        } else {
-            if (managedAmount > 0) {
+        // --- Transfer Funds and Call reward() for Managed Contract ---
+        if (managedAmount > 0) {
+            if (etherreward) {
+                console.log("  Forwarding ETH to Managed and calling reward():", managedAmount);
+                callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
+                (success, ) = payable(managedAddress).call{value: managedAmount}(callData);
+                require(success, "ETH transfer and reward call to Managed failed");
+                emit FundsForwarded(managedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, managedAmount);
+            } else {
                 console.log("  Forwarding ERC20 to Managed:", managedAmount);
                 success = token.transfer(managedAddress, managedAmount);
                 require(success, "ERC20 transfer to Managed failed");
                 emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
-            }
-             if (zonedAmount > 0) {
-                console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
-                success = token.transfer(zonedAddress, zonedAmount);
-                require(success, "ERC20 transfer to Zoned failed");
-                emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
-            }
-        }
-        // --- End: Forward Funds & Emit ---
-
-
-        // --- Start: Call Child Reward Functions & Emit ---
-        if (managedAmount > 0) {
-            if (!etherreward) {
-                // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Managed Contract with token amount:", managedAmount);
+                
+                console.log("  Calling reward on Managed Contract:", managedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
                 (success, ) = managedAddress.call(callData);
                 require(success, "Call to Managed reward failed");
             }
-            emit ChildRewardTriggered(managedAddress, tokenAddrForChildCall, managedAmount);
+            // emit ChildRewardTriggered(managedAddress, tokenAddrForChildCall, managedAmount);
         }
 
+        // --- Transfer Funds and Call reward() for Zoned Contract ---
         if (zonedAmount > 0) {
-            if (!etherreward) {
-                // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Zoned Contract with token amount:", zonedAmount);
+            if (etherreward) {
+                console.log("  Forwarding ETH to Zoned and calling reward():", zonedAmount);
+                callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
+                (success, ) = payable(zonedAddress).call{value: zonedAmount}(callData);
+                require(success, "ETH transfer and reward call to Zoned failed");
+                emit FundsForwarded(zonedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, zonedAmount);
+            } else {
+                console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
+                success = token.transfer(zonedAddress, zonedAmount);
+                require(success, "ERC20 transfer to Zoned failed");
+                emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
+                
+                console.log("  Calling reward on Zoned Contract:", zonedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
                 (success, ) = zonedAddress.call(callData);
                 require(success, "Call to Zoned reward failed");
             }
-            emit ChildRewardTriggered(zonedAddress, tokenAddrForChildCall, zonedAmount);
         }
-        // --- End: Call Child Reward Functions & Emit ---
-
-        // Remove or comment out the old RewardDistributed event
-        /*
-        emit RewardDistributed(
-            address(this),
-            _tokenamount,
-            userIds.length, // No longer relevant
-            etherreward ? "ETH" : "ERC20"
-        );
-        */
     }
    
     // Also add a debug function to view mappings

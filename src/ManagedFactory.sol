@@ -24,6 +24,7 @@ contract ManagedFactory {
     mapping (string => address) public toAddress;   //NOTE: Remove on deploy
 
     event NewHolon (string name, address addr);
+    event ManagedContractCreated(address indexed contractAddress, string indexed creatorUserId, string name);
  
     /// @dev Creates an new holon and adds it to the global and personal list
     /// @param _name The name of the holon.
@@ -65,6 +66,7 @@ contract ManagedFactory {
         toAddress[_name] = addr;
         
         emit NewHolon(_name, addr);
+        emit ManagedContractCreated(addr, _creatorUserId, _name);
         return addr;
     }
 

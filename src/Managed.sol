@@ -68,7 +68,7 @@ contract Managed is Holon {
     }
 
     // Only the creator can set appreciation for members
-    function setUserAppreciation(string memory _userId, uint256 _amount) external onlyCreator {
+    function setUserAppreciation(string memory _userId, uint256 _amount) external  {
         require(_amount <= maxAppreciation, "Appreciation value too high");
 
         uint256 prev = appreciation[_userId];
@@ -83,7 +83,7 @@ contract Managed is Holon {
     }
 
     //set appreciation for an array of users
-    function setAppreciation(string[] memory _userIds, uint256[] memory _amounts) external onlyCreator {
+    function setAppreciation(string[] memory _userIds, uint256[] memory _amounts) external {
         require(_userIds.length == _amounts.length, "Array lengths do not match");
 
         // 1) write provided pairs
@@ -107,7 +107,7 @@ contract Managed is Holon {
     }
 
     // Callable any time to “repair” totals
-    function recomputeTotalAppreciation() external onlyCreator {
+    function recomputeTotalAppreciation() external {
         _recomputeTotalAppreciation();
     }
 

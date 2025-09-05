@@ -1,14 +1,20 @@
-# Use the official Foundry image
-FROM ghcr.io/foundry-rs/foundry:latest
+FROM ubuntu:22.04
 
-# Set working directory (optional but clean)
-WORKDIR /anvil
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the entry point to run Anvil ( if it's a fork )
-# ENTRYPOINT ["anvil", "--fork-url", "https://rpc.flashbots.net/", "--host", "0.0.0.0", "-vvvv"]
+# Install Foundry
+RUN curl -L https://foundry.paradigm.xyz | bash
+RUN /root/.foundry/bin/foundryup
 
-# Set the entry point to run Anvil ( if it's not a fork )
-# ENTRYPOINT ["anvil", "--host", "0.0.0.0", "-vvvv"]
+# Add Foundry to PATH
+ENV PATH="/root/.foundry/bin:${PATH}"
 
-# We were still seeing the reorgs with the previous solution ^
-ENTRYPOINT ["anvil", "--host", "0.0.0.0", "--block-time", "2", "--chain-id", "1"]
+# Expose port
+EXPOSE 8545
+
+# Start Anvil with optimized settings for faster syncing
+CMD ["anvil", "--host", "0.0.0.0", "--port", "8545", "--fork-url", "https://rpc.flashbots.net/", "--gas-limit", "100000000", "--block-time", "1", "--gas-price", "1000000000"]
