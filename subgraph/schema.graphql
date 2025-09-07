@@ -88,9 +88,32 @@ type ZonedFactory @entity {
 type FundsForwarded @entity {
   id: ID!
   splitterAddress: Bytes!
-  fromAddress: Bytes!
-  toAddress: Bytes!
+  toAddress: Bytes!        # Child contract address (Managed or Zoned)
+  tokenAddress: Bytes!     # Token address (0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for ETH)
   amount: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}
+
+type MemberRewarded @entity {
+  id: ID!
+  contractAddress: Bytes!  # Managed or Zoned contract address
+  recipient: Bytes!
+  amount: BigInt!
+  isContract: Boolean!
+  rewardType: String!      # "ETH", "ERC20", "STORED_ETH", "STORED_ERC20"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}
+
+type RewardDistributed @entity {
+  id: ID!
+  contractAddress: Bytes!  # Managed or Zoned contract address
+  totalAmount: BigInt!
+  totalMembers: BigInt!
+  rewardType: String!      # "ETH" or "ERC20"
   timestamp: BigInt!
   blockNumber: BigInt!
   txHash: Bytes!

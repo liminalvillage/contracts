@@ -35,7 +35,7 @@ services:
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: "ipfs:5001"
-      ethereum: "mainnet:http://anvil:8545"
+      ethereum: "localhost:http://anvil:8545"
       # ethereum: "mainnet:http://hardhat:8545"
       # Optimized for faster syncing
       ETHEREUM_POLLING_INTERVAL: 1000

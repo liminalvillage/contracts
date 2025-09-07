@@ -1,6 +1,7 @@
 import { ZonedContractCreated } from "../generated/ZonedFactory/ZonedFactory"
 import { Zoned, ZonedFactory, Splitter } from "../generated/schema"
 import { BigInt } from "@graphprotocol/graph-ts"
+import { Zoned as ZonedTemplate } from "../generated/templates"
 
 export function handleZonedContractCreated(event: ZonedContractCreated): void {
   let zoned = new Zoned(event.params.contractAddress.toHexString())
@@ -34,6 +35,7 @@ export function handleZonedContractCreated(event: ZonedContractCreated): void {
   }
   factory.totalZoned = factory.totalZoned.plus(BigInt.fromI32(1))
   
+  ZonedTemplate.create(event.params.contractAddress)
   zoned.save()
   factory.save()
 }

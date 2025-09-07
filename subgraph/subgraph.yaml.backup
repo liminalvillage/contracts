@@ -6,70 +6,110 @@ schema:
 dataSources:
   - kind: ethereum
     name: Holons.sol
-    network: mainnet
+    network: localhost
     source:
       address: "0xe4eb561155afce723bb1ff8606fbfe9b28d5d38d"
       abi: Holons.sol
-      startBlock: 0
+      startBlock: 95
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - NewFlavor
+        # - NewFlavor
         - NewHolon
       abis:
         - name: Holons.sol
           file: ./abis/Holons.json
       eventHandlers:
-        - event: NewFlavor(indexed address,string)
-          handler: handleNewFlavor
+        # - event: NewFlavor(indexed address,string)
+        #   handler: handleNewFlavor
         - event: NewHolon(string,address)
           handler: handleNewHolon
-      file: ./src/holons-sol.ts
+      file: ./src/holons.ts
+
+  # ManagedFactory
+  - kind: ethereum/contract
+    name: ManagedFactory
+    network: localhost
+    source:
+      address: "0x057ef64e23666f000b34ae31332854acbd1c8544"
+      abi: ManagedFactory
+      startBlock: 91
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Managed
+        - ManagedFactory
+      abis:
+        - name: ManagedFactory
+          file: ./abis/ManagedFactory.json
+      eventHandlers:
+        - event: ManagedContractCreated(indexed address,indexed string,string)
+          handler: handleManagedContractCreated
+      file: ./src/managedFactory.ts
+
+  # ZonedFactory
+  - kind: ethereum/contract
+    name: ZonedFactory
+    network: localhost
+    source:
+      address: "0x261d8c5e9742e6f7f1076fa1f560894524e19cad"
+      abi: ZonedFactory
+      startBlock: 92
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Zoned
+        - ZonedFactory
+      abis:
+        - name: ZonedFactory
+          file: ./abis/ZonedFactory.json
+      eventHandlers:
+        - event: ZonedContractCreated(indexed address,indexed string,string,uint256)
+          handler: handleZonedContractCreated
+      file: ./src/zonedFactory.ts
 
 templates:
   - name: Splitter
     kind: ethereum/contract
-    network: mainnet
+    network: localhost
     source:
       abi: Splitter
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/splitter-template.ts
+      file: ./src/splitter.ts
       entities:
-        - HolonContract
-        - RewardDistribution
-        - MemberReward       
+        - FundsForwarded
+        - Splitter
       abis:
         - name: Splitter
           file: ./abis/Splitter.json
       eventHandlers:
-        - event: RewardDistributed(indexed address,uint256,uint256,string)
-          handler: handleRewardDistributed
-        - event: MemberRewarded(indexed address,indexed address,uint256,bool,string)
-          handler: handleMemberRewarded
-        - event: FundsForwarded(address,address,uint256)
+        - event: FundsForwarded(indexed address,indexed address,uint256)
           handler: handleFundsForwarded
-        - event: ChildRewardTriggered(address,address,uint256)
-          handler: handleChildRewardTriggered
+        - event: ChildHolonCreated(indexed address,indexed string,string)
+          handler: handleChildHolonCreated
 
   - name: Zoned
     kind: ethereum/contract
-    network: mainnet
+    network: localhost
     source:
       abi: Zoned
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/zoned-template.ts
+      file: ./src/zoned.ts
       entities:
-        - HolonContract
-        - RewardDistribution
-        - MemberReward       
+        - MemberRewarded
+        - RewardDistributed
       abis:
         - name: Zoned
           file: ./abis/Zoned.json
@@ -81,18 +121,17 @@ templates:
 
   - name: Managed
     kind: ethereum/contract
-    network: mainnet
+    network: localhost
     source:
       abi: Managed
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/managed-template.ts
+      file: ./src/managed.ts
       entities:
-        - HolonContract
-        - RewardDistribution
-        - MemberReward       
+        - MemberRewarded
+        - RewardDistributed
       abis:
         - name: Managed
           file: ./abis/Managed.json

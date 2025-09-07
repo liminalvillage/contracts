@@ -57,7 +57,7 @@ contract Splitter is Holon {
     string[] private contractKeys;  // Array to store all contract keys
     mapping(string => bool) private isKeyAdded;  // To track if a key is already in the array
 
-    event FundsForwarded(address, address, uint256);
+    event FundsForwarded(address indexed to, address indexed token, uint256 amount);
     event ChildHolonCreated(address indexed childAddress, string indexed childType, string name);
 
 
@@ -427,7 +427,7 @@ constructor(
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
                 (success, ) = payable(managedAddress).call{value: managedAmount}(callData);
                 require(success, "ETH transfer and reward call to Managed failed");
-                emit FundsForwarded(managedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, managedAmount);
+                emit FundsForwarded(managedAddress, address(0), managedAmount);
             } else {
                 console.log("  Forwarding ERC20 to Managed:", managedAmount);
                 success = token.transfer(managedAddress, managedAmount);
@@ -449,7 +449,7 @@ constructor(
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
                 (success, ) = payable(zonedAddress).call{value: zonedAmount}(callData);
                 require(success, "ETH transfer and reward call to Zoned failed");
-                emit FundsForwarded(zonedAddress, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, zonedAmount);
+                emit FundsForwarded(zonedAddress, address(0), zonedAmount);
             } else {
                 console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
                 success = token.transfer(zonedAddress, zonedAmount);

@@ -1,6 +1,8 @@
 import { ManagedContractCreated } from "../generated/ManagedFactory/ManagedFactory"
 import { Managed, ManagedFactory, Splitter } from "../generated/schema"
 import { BigInt } from "@graphprotocol/graph-ts"
+import { Managed as ManagedTemplate } from "../generated/templates"
+
 
 export function handleManagedContractCreated(event: ManagedContractCreated): void {
   let managed = new Managed(event.params.contractAddress.toHexString())
