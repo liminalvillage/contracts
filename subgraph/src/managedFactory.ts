@@ -26,7 +26,7 @@ export function handleManagedContractCreated(event: ManagedContractCreated): voi
     managed.parentSplitter = parentSplitter.id
   }
   
-  // Update factory stats
+  // Update factory statsvd
   let factory = ManagedFactory.load(event.address.toHexString())
   if (factory == null) {
     factory = new ManagedFactory(event.address.toHexString())
