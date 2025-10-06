@@ -43,10 +43,8 @@ import "forge-std/console.sol";
     address public botAddress;
     address public factory;
 
-    uint256 public a;
-    uint256 public b;
-    uint256 public c;
-    uint256 [] public rewards;  
+    uint256 private constant WAD = 1e18;
+    uint256 public s; // steepness parameter in WAD (e.g., 0.75e18 means each zone is 25% less per person)  
      //======================== Public holon variables
   
     uint public nzones;
@@ -92,9 +90,7 @@ import "forge-std/console.sol";
         console.log("Zoned.constructor: Set owner to creator with address: ", _creator);
 
         // Initialize reward parameters and call setRewardFunction
-        a = 0;
-        b = 0;
-        c = 1;
+        s = 0.75e18; // Default steepness: each zone gets 25% less per person
         // botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // localhost
         botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
         isZonedMember[creatorUserId] = true;
@@ -102,9 +98,9 @@ import "forge-std/console.sol";
         // commenting out to test if the group itself won't be part of the zones
         // zonemembers[_nzones].push(creatorUserId);
         // zone[creatorUserId] = _nzones;
-        console.log("Zoned.constructor: Calling setRewardFunction with a, b, c =", a, b, c);
-        setRewardFunction(creatorUserId, a, b, c);
-        console.log("Zoned.constructor: setRewardFunction completed");
+        console.log("Zoned.constructor: Calling setSteepness with s =", s);
+        setSteepness(creatorUserId, s);
+        console.log("Zoned.constructor: setSteepness completed");
         
         console.log("Zoned.constructor: Exiting constructor successfully");
     }
@@ -250,8 +246,9 @@ import "forge-std/console.sol";
     //=============================================================
     //these function will be called when a payment is sent to the holon
 
-    /// @dev Splits the ERC20 token amount sent to the holon according to the appreciation
-    /// @notice If appreciation is not shared, it splits it equally across each member (calling BlanketReward)
+    /// @dev Splits tokens across zones using steepness formula: each zone z gets N[z] * s^z share
+    /// @param _tokenaddress Address of the ERC20 token (address(0) for ETH)
+    /// @param _tokenamount Amount to distribute
     function reward(address _tokenaddress, uint256 _tokenamount)
         public
         payable
@@ -260,95 +257,88 @@ import "forge-std/console.sol";
         bool etherreward;
         IERC20 token;
 
-        if (msg.value  > 0 && _tokenaddress == address(0)) {
+        if (msg.value > 0 && _tokenaddress == address(0)) {
             _tokenamount = msg.value;
             etherreward = true;
-        }
-         else {
-            //Load ERC20 token information
+        } else {
             token = IERC20(_tokenaddress);
-            require (token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
+            require(token.balanceOf(address(this)) >= _tokenamount, "Not enough tokens in the contract");
         }
-        
-        uint256 amount;
-        uint256 totalMembersRewarded = 0; // Counter for all rewarded members
 
-        for (uint256 z = 0;  z <= nzones; z++) { //skip zone 0 as unassigned members
-            if (zonemembers[z].length > 0) {
-                amount = rewardFunction(z, _tokenamount) / zonemembers[z].length; // divide reward equally for all members in the same zone
-                for (uint256 i = 0; i < zonemembers[z].length; i++) {
-            
-            //     if (totalappreciation > 0 ) // if any appreciation was shared
-            //         amount = appreciation[_members[i]] * ( _tokenamount / totalappreciation); //multiply given appreciation with unit reward
-            //     else
-            //         amount = _tokenamount / _members.length ; //else use blanket unit reward value.
+        require(_tokenamount > 0, "amount=0");
+        require(s > 0 && s < WAD, "s out of range");
 
-                    string memory theUser = zonemembers[z][i];
+        uint256 Z = nzones + 1; // Total number of zones (0 to nzones inclusive)
 
-                    if (amount > 0 ){
-                        address recipient = userIdToAddress[theUser];
-                        bool isContract = recipient.code.length > 0;
+        // Pass 1: compute Σ N[z] * s^z and store counts and s^z
+        uint256[] memory counts = new uint256[](Z);
+        uint256[] memory sPow = new uint256[](Z);
 
-                        if (etherreward){
-                            if (hasClaimed[theUser]) {
-                                (bool success, ) = payable(recipient).call{value: amount}("");
-                                require(success, "Transfer failed");
-                                emit MemberRewarded(
-                                    address(this),
-                                    recipient,
-                                    amount,
-                                    isContract,
-                                    "ETH"
-                                );
-                            }
-                            else {
-                                this.depositEtherForUser(theUser, amount);
+        uint256 S = 0;
+        uint256 sp = WAD; // s^0
+        for (uint256 z = 0; z < Z; z++) {
+            uint256 n = zonemembers[z].length;
+            counts[z] = n;
+            sPow[z] = sp;
+            if (n > 0) S += n * sp;
+            sp = (sp * s) / WAD; // s^(z+1)
+        }
+        require(S > 0, "no recipients");
 
-                                emit MemberRewarded(
-                                    address(this),
-                                    address(0),
-                                    amount,
-                                    isContract,
-                                    "STORED_ETH"
-                                );
-                            }
+        uint256 totalMembersRewarded = 0;
+
+        // Pass 2: distribute per zone
+        for (uint256 z = 0; z < Z; z++) {
+            uint256 n = counts[z];
+            if (n == 0) continue;
+
+            // zoneTotal = amount * (N[z] * s^z) / S
+            uint256 zoneTotal = (_tokenamount * (n * sPow[z])) / S;
+            uint256 per = zoneTotal / n;
+
+            for (uint256 i = 0; i < zonemembers[z].length; i++) {
+                string memory theUser = zonemembers[z][i];
+
+                // Calculate amount for this user (last user gets remainder to handle dust)
+                uint256 amount;
+                if (i + 1 == zonemembers[z].length) {
+                    uint256 sentBefore = per * (n - 1);
+                    amount = zoneTotal - sentBefore;
+                } else {
+                    amount = per;
+                }
+
+                if (amount > 0) {
+                    address recipient = userIdToAddress[theUser];
+                    bool isContract = recipient.code.length > 0;
+
+                    if (etherreward) {
+                        if (hasClaimed[theUser]) {
+                            (bool success, ) = payable(recipient).call{value: amount}("");
+                            require(success, "Transfer failed");
+                            emit MemberRewarded(address(this), recipient, amount, isContract, "ETH");
+                        } else {
+                            this.depositEtherForUser(theUser, amount);
+                            emit MemberRewarded(address(this), address(0), amount, isContract, "STORED_ETH");
                         }
-                        else {
-                            if (hasClaimed[theUser]) {
-                                token.transfer(recipient, amount);
-                                (bool success, ) = recipient.call(
-                                    abi.encodeWithSignature(
-                                        "reward(address,uint256)",
-                                        _tokenaddress,
-                                        amount
-                                    )
-                                );
-                                require(success, "Unable to call the reward function");
-
-                                emit MemberRewarded(
-                                    address(this),
-                                    recipient,
-                                    amount,
-                                    isContract,
-                                    "ERC20"
-                                );
-                            } else {
-                                this.depositTokenForUser(theUser, _tokenaddress, amount);
-
-                                emit MemberRewarded(
-                                    address(this),
-                                    address(0),
-                                    amount,
-                                    isContract,
-                                    "STORED_ERC20"
-                                );
-                            }
+                    } else {
+                        if (hasClaimed[theUser]) {
+                            token.transfer(recipient, amount);
+                            (bool success, ) = recipient.call(
+                                abi.encodeWithSignature("reward(address,uint256)", _tokenaddress, amount)
+                            );
+                            require(success, "Unable to call the reward function");
+                            emit MemberRewarded(address(this), recipient, amount, isContract, "ERC20");
+                        } else {
+                            this.depositTokenForUser(theUser, _tokenaddress, amount);
+                            emit MemberRewarded(address(this), address(0), amount, isContract, "STORED_ERC20");
                         }
-                        totalMembersRewarded++;
                     }
+                    totalMembersRewarded++;
                 }
             }
         }
+
         emit RewardDistributed(
             address(this),
             _tokenamount,
@@ -358,46 +348,15 @@ import "forge-std/console.sol";
     }
     
 
-    function setRewardFunction(string memory senderUserId, uint _a, uint _b, uint _c) public {
-        // v1
-        // require (zone[tx.origin] == nzones, "only core members can change the reward function");
-        // require (zone[tx.origin] == nzones, "only core members can change the reward function");
-        // require (zone[creator] == nzones, "only core members can change the reward function");
-        // require (zone[msg.sender] == nzones, "only core members can change the reward function");
-        console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
-        // only core members can change reward function
-        require (msg.sender == creator || msg.sender == factory, "only creator or bot can change the reward function currently");
-        // commenting out temporairly
-        // require(zone[senderUserId] == nzones, "member must be in the highest zone");
+    /// @notice Sets the steepness parameter for zone-based reward distribution
+    /// @param senderUserId The user requesting the change
+    /// @param _s Steepness in WAD units (e.g., 0.75e18 = 75% = each zone gets 25% less per person)
+    function setSteepness(string memory senderUserId, uint256 _s) public {
+        console.log("setSteepness. msg.sender: ", msg.sender, "botAddress:", botAddress);
+        require(msg.sender == creator || msg.sender == factory, "only creator or factory can change steepness");
+        require(_s > 0 && _s < WAD, "s must be between 0 and WAD");
 
-        a = _a;
-        b = _b;
-        c = _c;
-        rewards = calculateRewards();
-    }
-
-    // Function to calculate base rewards for zones 1 to 6
-    function calculateRewards() public view returns (uint256[] memory) {
-        uint256[] memory _rewards = new uint256[](6);
-        uint256 total = 0;
-        for (uint256 _zone = 0; _zone <= nzones; ++_zone) {
-            _rewards[_zone] = a * _zone * _zone + b * _zone + c;
-            total += _rewards[_zone];
-        }
-        // Function to normalize _rewards to sum to 100%
-        for (uint256 i = 0; i < _rewards.length; i++) {
-            // Multiply by 10000 for scaling to maintain precision
-            _rewards[i] = _rewards[i] * 10000 / total;
-        }
-        return _rewards;
-    }
-    
-
-    function rewardFunction(uint _zone, uint _totalreward) private view returns (uint zonereward)
-    {
-        return (rewards[_zone] * _totalreward) / 10000;
-
-        //return _totalreward / nzones ;//(2 ^ (_zone + 1));
+        s = _s;
     }
 
     function addToZone(string memory senderUserId, string memory _userId, uint _zone) public/// @notice Explain to an end user what this does
