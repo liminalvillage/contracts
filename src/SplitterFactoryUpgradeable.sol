@@ -1,0 +1,165 @@
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8;
+
+import "./SplitterUpgradeable.sol";
+import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "forge-std/console.sol";
+
+/*
+    Copyright 2020, Roberto Valenti
+
+    This program is free software: you can use it, redistribute it and/or modify
+    it under the terms of the Peer Production License as published by
+    the P2P Foundation.
+
+    https://wiki.p2pfoundation.net/Peer_Production_License
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    Peer Production License for more details.
+ */
+
+contract SplitterFactoryUpgradeable {
+
+    address public implementation; // Address of the implementation contract
+    address public managedFactory;
+    address public zonedFactory;
+
+    mapping (address => address[]) private holons;
+    mapping (string => address) public toAddress;
+
+    event NewHolon (string name, address addr);
+    event ImplementationUpdated(address indexed oldImplementation, address indexed newImplementation);
+
+    constructor(address _implementation) {
+        require(_implementation != address(0), "Implementation cannot be zero address");
+        implementation = _implementation;
+    }
+
+    /// @notice Update the implementation contract address
+    /// @dev Only deploy upgrades after thorough testing
+    function setImplementation(address _newImplementation) external {
+        require(_newImplementation != address(0), "Implementation cannot be zero address");
+        address oldImplementation = implementation;
+        implementation = _newImplementation;
+        emit ImplementationUpdated(oldImplementation, _newImplementation);
+    }
+
+    // Setter for both factories at once
+    function setFactories(address _managedFactory, address _zonedFactory) public {
+        require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
+        require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
+
+        managedFactory = _managedFactory;
+        zonedFactory = _zonedFactory;
+    }
+
+    // Individual setters if needed
+    function setManagedFactory(address _managedFactory) public {
+        require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
+        managedFactory = _managedFactory;
+    }
+
+    function setZonedFactory(address _zonedFactory) public {
+        require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
+        zonedFactory = _zonedFactory;
+    }
+
+    function newHolon(string memory _creatorUserId, string memory _name, uint _parameter, address _managedFactory, address _zonedFactory) public returns (address) {
+        console.log("SplitterFactoryUpgradeable.newHolon: ENTRY");
+        console.log("SplitterFactoryUpgradeable.newHolon: Creating splitter for name:", _name);
+        console.log("SplitterFactoryUpgradeable.newHolon: Creator:", _creatorUserId);
+        console.log("SplitterFactoryUpgradeable.newHolon: Using ManagedFactory:", _managedFactory);
+        console.log("SplitterFactoryUpgradeable.newHolon: Using ZonedFactory:", _zonedFactory);
+        console.log("SplitterFactoryUpgradeable.newHolon: msg.sender =", msg.sender);
+
+        // Encode the initializer function call
+        bytes memory data = abi.encodeWithSelector(
+            SplitterUpgradeable.initialize.selector,
+            msg.sender,
+            _creatorUserId,
+            _name,
+            _parameter,
+            _managedFactory,
+            _zonedFactory
+        );
+
+        // Deploy proxy
+        ERC1967Proxy proxy = new ERC1967Proxy(implementation, data);
+        address addr = address(proxy);
+
+        console.log("SplitterFactoryUpgradeable.newHolon: Splitter proxy created at:", addr);
+
+        // Maintain existing functionality - add to holon lists
+        holons[address(0)].push(addr); // Add to the global holon list
+        holons[msg.sender].push(addr); // Add to the local holon list
+        if (msg.sender != tx.origin) {
+            holons[tx.origin].push(addr); // Add to the personal holon list
+            console.log("SplitterFactoryUpgradeable.newHolon: Added to tx.origin list");
+        }
+
+        // Store address in mapping
+        toAddress[_name] = addr;
+        console.log("SplitterFactoryUpgradeable.newHolon: Set toAddress[", _name, "] =", addr);
+
+        emit NewHolon(_name, addr);
+
+        console.log("SplitterFactoryUpgradeable.newHolon: SUCCESS - returning address:", addr);
+        return addr;
+    }
+
+    function createSplitter(
+        string memory _creatorUserId,
+        string memory _name,
+        uint _parameter,
+        address _managedFactory,
+        address _zonedFactory
+    ) public returns (address) {
+        console.log("SplitterFactoryUpgradeable.createSplitter: Creating splitter for name:", _name);
+
+        // Encode the initializer function call
+        bytes memory data = abi.encodeWithSelector(
+            SplitterUpgradeable.initialize.selector,
+            msg.sender,
+            _creatorUserId,
+            _name,
+            _parameter,
+            _managedFactory,
+            _zonedFactory
+        );
+
+        // Deploy proxy
+        ERC1967Proxy proxy = new ERC1967Proxy(implementation, data);
+        address addr = address(proxy);
+
+        // Add to holon lists
+        holons[address(0)].push(addr);
+        holons[msg.sender].push(addr);
+        if (msg.sender != tx.origin) {
+            holons[tx.origin].push(addr);
+        }
+
+        // Store in factory's mapping
+        toAddress[_name] = addr;
+
+        emit NewHolon(_name, addr);
+        return addr;
+    }
+
+    /// @dev Lists every holons ever created
+    /// @return an array containing the address of every holon ever created.
+
+    function listHolons() external view returns (address[] memory ){
+        return holons[address(0)];
+    }
+
+    /// @dev Lists every holons created by a given address
+    /// @param _address address;
+    /// @return an array containing the address of every holon ever created.
+
+    function listHolonsOf(address _address) external view returns (address[] memory){
+        return holons[_address];
+    }
+
+}
