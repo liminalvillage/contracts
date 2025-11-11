@@ -62,19 +62,6 @@ contract MembraneUpgradeable is Initializable {
         toAddress[_membername] = _memberaddress;
         isMember[_memberaddress] = true;
 
-        // call addParent function of the new member so that it can add this membrane as a parent
-        // detect if the contract has the function addParent
-
-        bool success;
-        bytes memory data;
-
-        if (success) {
-            (success,) = _memberaddress.call(
-                    abi.encodeWithSignature("addParent(address)", address(this))
-                    );
-            require (success, "Failed to create parent");
-        }
-
         emit AddedMember(_memberaddress, _membername);
     }
 
