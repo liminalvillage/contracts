@@ -63,8 +63,6 @@ contract ManagedFactoryUpgradeable is Ownable {
 
         holons[address(0)].push(addr); //add to the global holon list
         holons[msg.sender].push(addr); // add it to the local holon list
-        if (msg.sender != tx.origin)
-            holons[tx.origin].push(addr); //add it to the personal holon list
 
         toAddress[_name] = addr;
 

@@ -115,8 +115,7 @@ contract MembraneUpgradeable is Initializable {
         public
     {
         require (_address == msg.sender ||
-                msg.sender == owner ||
-                _address == tx.origin ,
+                msg.sender == owner,
                 "Name change request not sent from member nor owner");
         toAddress[_name] = _address;
         emit ChangedName(toName[_address], _name);

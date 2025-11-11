@@ -96,10 +96,6 @@ contract SplitterFactoryUpgradeable is Ownable {
         // Maintain existing functionality - add to holon lists
         holons[address(0)].push(addr); // Add to the global holon list
         holons[msg.sender].push(addr); // Add to the local holon list
-        if (msg.sender != tx.origin) {
-            holons[tx.origin].push(addr); // Add to the personal holon list
-            console.log("SplitterFactoryUpgradeable.newHolon: Added to tx.origin list");
-        }
 
         // Store address in mapping
         toAddress[_name] = addr;
@@ -138,9 +134,6 @@ contract SplitterFactoryUpgradeable is Ownable {
         // Add to holon lists
         holons[address(0)].push(addr);
         holons[msg.sender].push(addr);
-        if (msg.sender != tx.origin) {
-            holons[tx.origin].push(addr);
-        }
 
         // Store in factory's mapping
         toAddress[_name] = addr;
