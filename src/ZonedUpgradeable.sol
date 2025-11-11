@@ -210,6 +210,7 @@ import "forge-std/console.sol";
         public
         payable
         override
+        nonReentrant
     {
         bool etherreward;
         IERC20 token;

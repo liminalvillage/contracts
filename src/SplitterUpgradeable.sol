@@ -271,6 +271,7 @@ contract SplitterUpgradeable is HolonUpgradeable {
         public
         payable
         override
+        nonReentrant
     {
         bool etherreward;
         IERC20 token;

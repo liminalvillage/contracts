@@ -19,10 +19,11 @@ pragma solidity ^0.8;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "./IHolonFactory.sol";
 import "./MembraneUpgradeable.sol";
 
-abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUpgradeable {
+abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
 
      //======================== Public holon variables
     string public name;                      //The name of the holon
@@ -54,6 +55,7 @@ abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUp
     function __Holon_init(address _owner) internal onlyInitializing {
         __Membrane_init(_owner);
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
         __Holon_init_unchained();
     }
 
@@ -97,7 +99,7 @@ abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUp
     }
 
 
-     function reward(address _tokenAddress, uint256 _tokenAmount) public payable virtual {
+     function reward(address _tokenAddress, uint256 _tokenAmount) public payable virtual nonReentrant {
         require(_members.length > 0, "No members to reward");
         require(_tokenAmount > 0, "Token amount must be greater than zero");
 

@@ -184,7 +184,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
         }
     }
     // reward function to reward all members through their user id
-    function reward(address _tokenaddress, uint256 _tokenamount) public payable override {
+    function reward(address _tokenaddress, uint256 _tokenamount) public payable override nonReentrant {
         console.log(">>> ManagedUpgradeable.reward: Entered");
         console.log("_tokenaddress:", _tokenaddress);
         console.log("_tokenamount (initial):", _tokenamount);
