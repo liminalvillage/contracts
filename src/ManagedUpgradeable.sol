@@ -2,6 +2,7 @@
 pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/libraries/FullMath.sol";
 import "forge-std/console.sol";
 
@@ -23,6 +24,7 @@ import "./IHolonFactory.sol";
 import "./HolonUpgradeable.sol";
 
 contract ManagedUpgradeable is HolonUpgradeable {
+    using SafeERC20 for IERC20;
     string[] public userIds; // list of userIds
     mapping(string => address) public userIdToAddress; // mapping for userIds to addresses
     mapping(string => bool) public hasClaimed; // mapping to track if userId has already claimed
@@ -179,7 +181,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
             if (amount > 0) {
                 tokenBalance[_userId][tokens[i]] = 0;
                 totalDeposited[tokens[i]] -= amount;
-                token.transfer(_beneficiary, amount);
+                token.safeTransfer(_beneficiary, amount);
             }
         }
     }
@@ -277,7 +279,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
                 } else { // ERC20 case
                     if (hasClaimed[userIds[i]]) {
                         console.log("ERC20 reward user has claimed.");
-                        token.transfer(recipient, amount);
+                        token.safeTransfer(recipient, amount);
                         (bool success, ) = recipient.call(
                             abi.encodeWithSignature(
                                 "reward(address,uint256)",

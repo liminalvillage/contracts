@@ -2,6 +2,7 @@
 pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "./ZonedFactory.sol";
 import "./ManagedFactory.sol";
@@ -27,6 +28,7 @@ import "./HolonUpgradeable.sol";
 
 contract SplitterUpgradeable is HolonUpgradeable {
     using Strings for string;
+    using SafeERC20 for IERC20;
 
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     string[] public userIds; // list of userIds
@@ -247,7 +249,7 @@ contract SplitterUpgradeable is HolonUpgradeable {
             if (amount > 0) {
                 tokenBalance[_userId][tokens[i]] = 0;
                 totalDeposited[tokens[i]] -= amount;
-                token.transfer(_beneficiary, amount);
+                token.safeTransfer(_beneficiary, amount);
             }
         }
     }
@@ -333,14 +335,12 @@ contract SplitterUpgradeable is HolonUpgradeable {
         } else {
             if (managedAmount > 0) {
                 console.log("  Forwarding ERC20 to Managed:", managedAmount);
-                success = token.transfer(managedAddress, managedAmount);
-                require(success, "ERC20 transfer to Managed failed");
+                token.safeTransfer(managedAddress, managedAmount);
                 emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
             }
              if (zonedAmount > 0) {
                 console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
-                success = token.transfer(zonedAddress, zonedAmount);
-                require(success, "ERC20 transfer to Zoned failed");
+                token.safeTransfer(zonedAddress, zonedAmount);
                 emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
             }
         }

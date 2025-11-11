@@ -18,11 +18,13 @@ pragma solidity ^0.8;
 
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IHolonFactory.sol";
 import "./HolonUpgradeable.sol";
 import "forge-std/console.sol";
 
  contract ZonedUpgradeable is HolonUpgradeable{
+    using SafeERC20 for IERC20;
 
     // Membrane variables and functionalities
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
@@ -199,7 +201,7 @@ import "forge-std/console.sol";
             if (amount > 0) {
                 tokenBalance[_userId][tokens[i]] = 0;
                 totalDeposited[tokens[i]] -= amount;
-                token.transfer(_beneficiary, amount);
+                token.safeTransfer(_beneficiary, amount);
             }
         }
     }
@@ -267,7 +269,7 @@ import "forge-std/console.sol";
                         }
                         else {
                             if (hasClaimed[theUser]) {
-                                token.transfer(recipient, amount);
+                                token.safeTransfer(recipient, amount);
                                 (bool success, ) = recipient.call(
                                     abi.encodeWithSignature(
                                         "reward(address,uint256)",

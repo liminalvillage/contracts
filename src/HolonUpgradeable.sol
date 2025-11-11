@@ -17,6 +17,7 @@ pragma solidity ^0.8;
  */
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -24,6 +25,7 @@ import "./IHolonFactory.sol";
 import "./MembraneUpgradeable.sol";
 
 abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
+    using SafeERC20 for IERC20;
 
      //======================== Public holon variables
     string public name;                      //The name of the holon
@@ -151,7 +153,7 @@ abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUp
         for (uint256 i = 0; i < _members.length; i++) {
             address recipient = _members[i];
             bool isContract = recipient.code.length > 0;
-            require(token.transfer(_members[i], amountPerMember), "ERC20 transfer failed");
+            token.safeTransfer(_members[i], amountPerMember);
             emit MemberRewarded(
                 address(this),
                 recipient,
