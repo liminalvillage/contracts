@@ -102,7 +102,8 @@ import "forge-std/console.sol";
 
     // Add a single member (automatically to zone 0)
     function addMember(string memory senderUserId, string memory _userId) external {
-        if (isZonedMember[_userId]) return; // Gently fail if user is already added
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
+        require(!isZonedMember[_userId], "Member already added");
 
         isZonedMember[_userId] = true;
         userIds.push(_userId);
@@ -113,6 +114,7 @@ import "forge-std/console.sol";
     }
 
     function addMembers(string memory senderUserId, string[] memory _userIds) external {
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isZonedMember[userId]) continue; // Skip if user is already added

@@ -81,6 +81,7 @@ contract MembraneUpgradeable is Initializable {
     function addParent(address  _parentaddress)
         public
     {
+        require(msg.sender == owner || isMember[msg.sender], "Only owner or members can add parents");
         _parents.push(_parentaddress);
     }
 

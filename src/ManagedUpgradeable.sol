@@ -56,15 +56,15 @@ contract ManagedUpgradeable is HolonUpgradeable {
 
     // Only the creator can add members
     function addMember(string memory _userId) external {
-        // require(msg.sender == creator, "Only creator can add members");
-        if (isManagedMember[_userId]) return; // Gently fail if user is already added
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
+        require(!isManagedMember[_userId], "Member already added");
         isManagedMember[_userId] = true;
         userIds.push(_userId);
     }
 
     // Add multiple members at once
     function addMembers(string[] memory _userIds) external {
-        // require(msg.sender == creator, "Only creator can add members");
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isManagedMember[userId]) continue; // Skip if user is already added

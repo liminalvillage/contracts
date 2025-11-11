@@ -165,9 +165,8 @@ contract SplitterUpgradeable is HolonUpgradeable {
     // Only the creator can add members
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     function addMember(string memory _userId) external {
-        // require(msg.sender == creator, "Only creator can add members");
-        // require(msg.sender == botAddress, "Only creator can add members");
-        if (isSplitterMember[_userId]) return; // Gently fail if user is already added
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
+        require(!isSplitterMember[_userId], "Member already added");
         isSplitterMember[_userId] = true;
         userIds.push(_userId);
     }
@@ -175,7 +174,7 @@ contract SplitterUpgradeable is HolonUpgradeable {
     // Add multiple members at once
     //#TODO: Modularize this ( into Membrane ), as it will become the same for most of the contracts
     function addMembers(string[] memory _userIds) external {
-        // require(msg.sender == botAddress, "Only creator can add members");
+        require(msg.sender == creator || msg.sender == owner, "Only creator or owner can add members");
         for (uint i = 0; i < _userIds.length; i++) {
             string memory userId = _userIds[i];
             if (isSplitterMember[userId]) continue; // Skip if user is already added
