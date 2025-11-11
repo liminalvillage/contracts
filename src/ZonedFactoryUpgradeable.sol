@@ -3,6 +3,7 @@ pragma solidity ^0.8;
 
 import "./ZonedUpgradeable.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "forge-std/console.sol";
 
 /*
@@ -20,7 +21,7 @@ import "forge-std/console.sol";
     Peer Production License for more details.
  */
 
-contract ZonedFactoryUpgradeable {
+contract ZonedFactoryUpgradeable is Ownable {
 
     address public implementation; // Address of the implementation contract
     mapping (address => address[]) private holons;
@@ -32,11 +33,12 @@ contract ZonedFactoryUpgradeable {
     constructor(address _implementation) {
         require(_implementation != address(0), "Implementation cannot be zero address");
         implementation = _implementation;
+        _transferOwnership(msg.sender);
     }
 
     /// @notice Update the implementation contract address
-    /// @dev Only deploy upgrades after thorough testing
-    function setImplementation(address _newImplementation) external {
+    /// @dev Only owner can update. Deploy upgrades after thorough testing
+    function setImplementation(address _newImplementation) external onlyOwner {
         require(_newImplementation != address(0), "Implementation cannot be zero address");
         address oldImplementation = implementation;
         implementation = _newImplementation;

@@ -3,6 +3,7 @@ pragma solidity ^0.8;
 
 import "./SplitterUpgradeable.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "forge-std/console.sol";
 
 /*
@@ -20,7 +21,7 @@ import "forge-std/console.sol";
     Peer Production License for more details.
  */
 
-contract SplitterFactoryUpgradeable {
+contract SplitterFactoryUpgradeable is Ownable {
 
     address public implementation; // Address of the implementation contract
     address public managedFactory;
@@ -35,11 +36,12 @@ contract SplitterFactoryUpgradeable {
     constructor(address _implementation) {
         require(_implementation != address(0), "Implementation cannot be zero address");
         implementation = _implementation;
+        _transferOwnership(msg.sender);
     }
 
     /// @notice Update the implementation contract address
-    /// @dev Only deploy upgrades after thorough testing
-    function setImplementation(address _newImplementation) external {
+    /// @dev Only owner can update. Deploy upgrades after thorough testing
+    function setImplementation(address _newImplementation) external onlyOwner {
         require(_newImplementation != address(0), "Implementation cannot be zero address");
         address oldImplementation = implementation;
         implementation = _newImplementation;
@@ -47,7 +49,7 @@ contract SplitterFactoryUpgradeable {
     }
 
     // Setter for both factories at once
-    function setFactories(address _managedFactory, address _zonedFactory) public {
+    function setFactories(address _managedFactory, address _zonedFactory) external onlyOwner {
         require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
         require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
 
@@ -56,12 +58,12 @@ contract SplitterFactoryUpgradeable {
     }
 
     // Individual setters if needed
-    function setManagedFactory(address _managedFactory) public {
+    function setManagedFactory(address _managedFactory) external onlyOwner {
         require(_managedFactory != address(0), "ManagedFactory cannot be zero address");
         managedFactory = _managedFactory;
     }
 
-    function setZonedFactory(address _zonedFactory) public {
+    function setZonedFactory(address _zonedFactory) external onlyOwner {
         require(_zonedFactory != address(0), "ZonedFactory cannot be zero address");
         zonedFactory = _zonedFactory;
     }
