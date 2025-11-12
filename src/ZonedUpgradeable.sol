@@ -21,7 +21,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IHolonFactory.sol";
 import "./HolonUpgradeable.sol";
-import "forge-std/console.sol";
 
  contract ZonedUpgradeable is HolonUpgradeable{
     using SafeERC20 for IERC20;
@@ -67,21 +66,16 @@ import "forge-std/console.sol";
 
     function __Zoned_init_unchained(string memory creatorUserId, address _creator, string memory _name, uint _nzones) internal onlyInitializing {
         name = _name;
-        console.log("ZonedUpgradeable.initialize: Set name to:", _name);
 
         creator = _creator;
-        console.log("ZonedUpgradeable.initialize: Set creator to:", uint256(uint160(_creator)));
 
         flavor = "Zoned";
-        console.log("ZonedUpgradeable.initialize: Set flavor to: Zoned");
 
         nzones = _nzones;
-        console.log("ZonedUpgradeable.initialize: Set nzones to:", _nzones);
 
         // Set owner to creator and log
         owner = _creator;
         factory = msg.sender;
-        console.log("ZonedUpgradeable.initialize: Set owner to creator with address: ", _creator);
 
         // Initialize reward parameters and call setRewardFunction
         a = 0;
@@ -91,11 +85,7 @@ import "forge-std/console.sol";
         isZonedMember[creatorUserId] = true;
         userIds.push(creatorUserId);
 
-        console.log("ZonedUpgradeable.initialize: Calling setRewardFunction with a, b, c =", a, b, c);
         setRewardFunction(creatorUserId, a, b, c);
-        console.log("ZonedUpgradeable.initialize: setRewardFunction completed");
-
-        console.log("ZonedUpgradeable.initialize: Exiting initialization successfully");
     }
 
     //=============================================================
@@ -313,7 +303,6 @@ import "forge-std/console.sol";
 
 
     function setRewardFunction(string memory senderUserId, uint _a, uint _b, uint _c) public {
-        console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
         // only core members can change reward function
         require (msg.sender == creator || msg.sender == factory, "only creator or bot can change the reward function currently");
 

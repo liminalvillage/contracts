@@ -6,7 +6,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "./ZonedFactory.sol";
 import "./ManagedFactory.sol";
-import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -85,21 +84,11 @@ contract SplitterUpgradeable is HolonUpgradeable {
         address _managedFactory,
         address _zonedFactory
     ) internal onlyInitializing {
-        console.log("SplitterUpgradeable.initialize: ENTRY");
-        console.log("SplitterUpgradeable.initialize: Owner:", _owner);
-        console.log("SplitterUpgradeable.initialize: Creator:", _creatorUserId);
-        console.log("SplitterUpgradeable.initialize: Name:", _name);
-        console.log("SplitterUpgradeable.initialize: Parameter:", _parameter);
-        console.log("SplitterUpgradeable.initialize: ManagedFactory:", _managedFactory);
-        console.log("SplitterUpgradeable.initialize: ZonedFactory:", _zonedFactory);
-
         owner = _owner;
         creatorUserId = _creatorUserId;
         name = _name;
         managedFactory = _managedFactory;
         zonedFactory = _zonedFactory;
-
-        console.log("SplitterUpgradeable.initialize: SUCCESS");
     }
 
     // Set factory addresses
@@ -151,8 +140,6 @@ contract SplitterUpgradeable is HolonUpgradeable {
     function createChildContracts(string memory _creatorUserId, string memory _baseName, uint _parameter) internal {
         address managed = createManagedContract(_creatorUserId, _baseName, _parameter);
         address zoned = createZonedContract(_creatorUserId, _baseName, _parameter);
-
-        console.log("createChildContract, baseName: ", _baseName);
     }
 
     // Function for routing commands by contract name
@@ -290,13 +277,10 @@ contract SplitterUpgradeable is HolonUpgradeable {
             tokenAddrForChildCall = _tokenaddress; // Use actual token address for ERC20
         }
 
-        console.log("reward - Starting address lookup");
         string memory managedName = string.concat(name, "_managed");
         string memory zonedName = string.concat(name, "_zoned");
         address managedAddress = contractsByType[managedName];
         address zonedAddress = contractsByType[zonedName];
-        console.log("  found managedAddress:", managedAddress);
-        console.log("  found zonedAddress:", zonedAddress);
 
         require(managedAddress != address(0), "Managed contract address not set");
         require(zonedAddress != address(0), "Zoned contract address not set");
@@ -311,35 +295,27 @@ contract SplitterUpgradeable is HolonUpgradeable {
              managedAmount += (_tokenamount - calculatedTotal);
         }
 
-        console.log("  Total Amount:", _tokenamount);
-        console.log("  Managed Share:", managedAmount);
-        console.log("  Zoned Share:", zonedAmount);
-
         bool success;
         bytes memory callData; // For low-level calls
 
         // --- Start: Forward Funds & Emit ---
         if (etherreward) {
             if (managedAmount > 0) {
-                console.log("  Forwarding ETH to Managed:", managedAmount);
                 (success, ) = payable(managedAddress).call{value: managedAmount}("");
                 require(success, "ETH transfer to Managed failed");
                 emit FundsForwarded(managedAddress, address(0), managedAmount); // ETH uses address(0)
             }
             if (zonedAmount > 0) {
-                 console.log("  Forwarding ETH to Zoned:", zonedAmount);
                 (success, ) = payable(zonedAddress).call{value: zonedAmount}("");
                 require(success, "ETH transfer to Zoned failed");
                 emit FundsForwarded(zonedAddress, address(0), zonedAmount); // ETH uses address(0)
             }
         } else {
             if (managedAmount > 0) {
-                console.log("  Forwarding ERC20 to Managed:", managedAmount);
                 token.safeTransfer(managedAddress, managedAmount);
                 emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
             }
              if (zonedAmount > 0) {
-                console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
                 token.safeTransfer(zonedAddress, zonedAmount);
                 emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
             }
@@ -351,7 +327,6 @@ contract SplitterUpgradeable is HolonUpgradeable {
         if (managedAmount > 0) {
             if (!etherreward) {
                 // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Managed Contract with token amount:", managedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
                 (success, ) = managedAddress.call(callData);
                 require(success, "Call to Managed reward failed");
@@ -362,7 +337,6 @@ contract SplitterUpgradeable is HolonUpgradeable {
         if (zonedAmount > 0) {
             if (!etherreward) {
                 // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Zoned Contract with token amount:", zonedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
                 (success, ) = zonedAddress.call(callData);
                 require(success, "Call to Zoned reward failed");

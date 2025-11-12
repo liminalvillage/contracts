@@ -3,7 +3,6 @@ pragma solidity ^0.8;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "v3-core/contracts/libraries/FullMath.sol";
-import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -41,7 +40,6 @@ contract Managed is Holon {
         creator = _creator;
         totalappreciation = 0;
         flavor = "Managed";
-        console.log("Managed.constructor: Set owner to creator with address: ", _creator);
     }
 
     // Only the creator can add members
@@ -175,74 +173,45 @@ contract Managed is Holon {
     }
     // reward function to reward all members through their user id
     function reward(address _tokenaddress, uint256 _tokenamount) public payable override {
-        console.log(">>> Managed.reward: Entered");
-        console.log("_tokenaddress:", _tokenaddress);
-        console.log("_tokenamount (initial):", _tokenamount);
-        console.log("msg.value:", msg.value);
-        console.log("address(this):", address(this));
-
         bool etherreward;
         IERC20 token;
 
         if (msg.value > 0 && _tokenaddress == address(0)) {
-            console.log("--- Managed.reward: ETH path selected ---");
             _tokenamount = msg.value; // Amount is now msg.value
             etherreward = true;
-            console.log("    _tokenamount (updated for ETH):", _tokenamount);
         } else {
-            console.log("--- Managed.reward: ERC20 path selected ---");
-            console.log("ERC20 token address:", _tokenaddress);
             token = IERC20(_tokenaddress);
             etherreward = false;
             uint256 currentBalance = token.balanceOf(address(this));
             uint256 deposited = totalDeposited[_tokenaddress];
-            console.log("Checking token balance: currentBalance =", currentBalance);
-            console.log("Total deposited: ", deposited);
-            console.log("Token amount:", _tokenamount);
-            
+
             require(
                 currentBalance - deposited >= _tokenamount, // Keep original logic
                 "Not enough tokens in the contract"
             );
-             console.log("Token balance check passed.");
         }
 
         uint256 amount;
-        console.log("--- Managed.reward: Starting user loop ---");
-        console.log("Number of userIds:", userIds.length);
-        console.log("Total appreciation:", totalappreciation);
 
         for (uint256 i = 0; i < userIds.length; i++) {
             string memory currentUserId = userIds[i];
-            console.log("Loop", i, "- Processing userId:", currentUserId);
 
             if (totalappreciation > 0) {
-                console.log("Calculating amount based on appreciation.");
                 uint256 userAppreciation = appreciation[currentUserId];
-                console.log("User appreciation:", userAppreciation);
                 amount = FullMath.mulDiv(userAppreciation, _tokenamount, totalappreciation);
-                console.log("Calculated amount:", amount);
             } else {
-                console.log("Calculating amount based on even split.");
                 require(userIds.length > 0, "Managed.reward: Division by zero users (should not happen here)"); // Keep original check
                 amount = _tokenamount / userIds.length;
-                console.log("    Calculated amount:", amount);
             }
 
             if (amount > 0) {
-                console.log("Amount > 0. Processing distribution.");
                 address recipient = userIdToAddress[currentUserId];
-                 console.log("Recipient address (from mapping):", recipient);
                 // Note: recipient will be address(0) if user hasn't claimed yet
                 bool isContract = recipient.code.length > 0;
-                console.log("Is recipient a contract?", isContract);
-                bool claimed = hasClaimed[currentUserId];
-                console.log("Has user claimed?", claimed);
 
 
                 if (etherreward) { // Ether case
                     if (hasClaimed[userIds[i]]) {
-                        console.log("Ether reward user has claimed.");
                         (bool success, ) = payable(recipient).call{value: amount}("");
                         require(success, "Transfer failed");
 
@@ -255,7 +224,6 @@ contract Managed is Holon {
                         );
                     } else {
                         this.depositEtherForUser(userIds[i], amount);
-                        console.log("Ether reward user has not claimed.");
                         emit MemberRewarded(
                             address(this),
                             address(0),
@@ -266,7 +234,6 @@ contract Managed is Holon {
                     }
                 } else { // ERC20 case
                     if (hasClaimed[userIds[i]]) {
-                        console.log("ERC20 reward user has claimed.");
                         token.transfer(recipient, amount);
                         (bool success, ) = recipient.call(
                             abi.encodeWithSignature(
@@ -285,7 +252,6 @@ contract Managed is Holon {
                             "ERC20"
                         );
                     } else {
-                        console.log("ERC20 reward user has not claimed.");
                         this.depositTokenForUser(userIds[i], _tokenaddress, amount);
 
                         emit MemberRewarded(

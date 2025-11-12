@@ -18,7 +18,6 @@ pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Holon.sol";
-import "forge-std/console.sol";
 
 contract Appreciative is Holon {
 
@@ -51,9 +50,8 @@ contract Appreciative is Holon {
         totalappreciation = 0;
         owner = _creator; // We explicitly set it to understand if this causes an issues
         // addressToUserId[botAddress] = userId; // Will be necessary as we introduce account abstraction
-        console.log("Appreciative.constructor: Set owner to creator with address: ", _creator);
-        
-        // temporairly, for testing purposes: 
+
+        // temporairly, for testing purposes:
         // botAddress = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // localhost
         botAddress = 0xb2DA94d13735aF2DDCF5a3c797547290221f3DBb; // sepolia
         isAppreciativeMember[creatorUserId] = true;

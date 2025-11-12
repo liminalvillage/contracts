@@ -20,7 +20,6 @@ pragma solidity ^0.8;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "./IHolonFactory.sol";
 import "./Holon.sol";
-import "forge-std/console.sol";
 
  contract Zoned is Holon{
 
@@ -74,22 +73,17 @@ import "forge-std/console.sol";
 
     constructor (string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
         name = _name;
-        console.log("Zoned.constructor: Set name to:", _name);
-        
+
         creator = _creator;
-        console.log("Zoned.constructor: Set creator to:", uint256(uint160(_creator)));
-        
+
         flavor = "Zoned";
-        console.log("Zoned.constructor: Set flavor to: Zoned");
-        
+
         nzones = _nzones;
-        console.log("Zoned.constructor: Set nzones to:", _nzones);
-        
+
         // Set owner to creator and log
         owner = _creator;
         factory = msg.sender;
         // owner = msg.sender;
-        console.log("Zoned.constructor: Set owner to creator with address: ", _creator);
 
         // Initialize reward parameters and call setRewardFunction
         a = 0;
@@ -102,11 +96,7 @@ import "forge-std/console.sol";
         // commenting out to test if the group itself won't be part of the zones
         // zonemembers[_nzones].push(creatorUserId);
         // zone[creatorUserId] = _nzones;
-        console.log("Zoned.constructor: Calling setRewardFunction with a, b, c =", a, b, c);
         setRewardFunction(creatorUserId, a, b, c);
-        console.log("Zoned.constructor: setRewardFunction completed");
-        
-        console.log("Zoned.constructor: Exiting constructor successfully");
     }
     // constructor(string memory creatorUserId, address _creator, string memory _name, uint _nzones) {
     //     name = _name;
@@ -364,7 +354,6 @@ import "forge-std/console.sol";
         // require (zone[tx.origin] == nzones, "only core members can change the reward function");
         // require (zone[creator] == nzones, "only core members can change the reward function");
         // require (zone[msg.sender] == nzones, "only core members can change the reward function");
-        console.log("setRewardFunction. msg.sender: ", msg.sender, "botAddress:", botAddress);
         // only core members can change reward function
         require (msg.sender == creator || msg.sender == factory, "only creator or bot can change the reward function currently");
         // commenting out temporairly

@@ -4,7 +4,6 @@ pragma solidity ^0.8;
 import "./ZonedUpgradeable.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -52,11 +51,6 @@ contract ZonedFactoryUpgradeable is Ownable {
     /// @return Address of the new proxy
     function newHolon(string memory creatorUserId, string memory _name, uint _parameter) public returns (address)
     {
-        console.log("ZonedFactoryUpgradeable.newHolon: Creating zoned proxy");
-        console.log("  Name:", _name);
-        console.log("  Creator:", creatorUserId);
-        console.log("  Parameter (nzones):", _parameter);
-
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(
             ZonedUpgradeable.initialize.selector,
@@ -69,8 +63,6 @@ contract ZonedFactoryUpgradeable is Ownable {
         // Deploy proxy
         ERC1967Proxy proxy = new ERC1967Proxy(implementation, data);
         address addr = address(proxy);
-
-        console.log("  Proxy deployed at:", addr);
 
         holons[address(0)].push(addr); //add to the global holon list
         holons[msg.sender].push(addr); // add it to the local holon list
@@ -87,8 +79,6 @@ contract ZonedFactoryUpgradeable is Ownable {
         string memory _name,
         uint _parameter
     ) public returns (address) {
-        console.log("ZonedFactoryUpgradeable.createZoned: Creating zoned proxy");
-
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(
             ZonedUpgradeable.initialize.selector,

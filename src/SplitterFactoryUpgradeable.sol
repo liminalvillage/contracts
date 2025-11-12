@@ -4,7 +4,6 @@ pragma solidity ^0.8;
 import "./SplitterUpgradeable.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -69,13 +68,6 @@ contract SplitterFactoryUpgradeable is Ownable {
     }
 
     function newHolon(string memory _creatorUserId, string memory _name, uint _parameter, address _managedFactory, address _zonedFactory) public returns (address) {
-        console.log("SplitterFactoryUpgradeable.newHolon: ENTRY");
-        console.log("SplitterFactoryUpgradeable.newHolon: Creating splitter for name:", _name);
-        console.log("SplitterFactoryUpgradeable.newHolon: Creator:", _creatorUserId);
-        console.log("SplitterFactoryUpgradeable.newHolon: Using ManagedFactory:", _managedFactory);
-        console.log("SplitterFactoryUpgradeable.newHolon: Using ZonedFactory:", _zonedFactory);
-        console.log("SplitterFactoryUpgradeable.newHolon: msg.sender =", msg.sender);
-
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(
             SplitterUpgradeable.initialize.selector,
@@ -91,19 +83,15 @@ contract SplitterFactoryUpgradeable is Ownable {
         ERC1967Proxy proxy = new ERC1967Proxy(implementation, data);
         address addr = address(proxy);
 
-        console.log("SplitterFactoryUpgradeable.newHolon: Splitter proxy created at:", addr);
-
         // Maintain existing functionality - add to holon lists
         holons[address(0)].push(addr); // Add to the global holon list
         holons[msg.sender].push(addr); // Add to the local holon list
 
         // Store address in mapping
         toAddress[_name] = addr;
-        console.log("SplitterFactoryUpgradeable.newHolon: Set toAddress[", _name, "] =", addr);
 
         emit NewHolon(_name, addr);
 
-        console.log("SplitterFactoryUpgradeable.newHolon: SUCCESS - returning address:", addr);
         return addr;
     }
 
@@ -114,8 +102,6 @@ contract SplitterFactoryUpgradeable is Ownable {
         address _managedFactory,
         address _zonedFactory
     ) public returns (address) {
-        console.log("SplitterFactoryUpgradeable.createSplitter: Creating splitter for name:", _name);
-
         // Encode the initializer function call
         bytes memory data = abi.encodeWithSelector(
             SplitterUpgradeable.initialize.selector,

@@ -23,7 +23,6 @@ import "./ZonedFactory.sol";
 import "./IHolonFactory.sol";
 import "./Holon.sol";
 import "./ManagedFactory.sol";
-import "forge-std/console.sol";
 
 
 contract Splitter is Holon {
@@ -70,21 +69,11 @@ constructor(
     address _managedFactory,
     address _zonedFactory
 ) {
-    console.log("Splitter.constructor: ENTRY");
-    console.log("Splitter.constructor: Owner:", _owner);
-    console.log("Splitter.constructor: Creator:", _creatorUserId);
-    console.log("Splitter.constructor: Name:", _name);
-    console.log("Splitter.constructor: Parameter:", _parameter);
-    console.log("Splitter.constructor: ManagedFactory:", _managedFactory);
-    console.log("Splitter.constructor: ZonedFactory:", _zonedFactory);
-    
     owner = _owner;
     creatorUserId = _creatorUserId;
     name = _name;
     managedFactory = _managedFactory;
     zonedFactory = _zonedFactory;
-    
-    console.log("Splitter.constructor: SUCCESS");
 }
     // Set factory addresses
     // #TODO: 
@@ -135,8 +124,6 @@ constructor(
     function createChildContracts(string memory _creatorUserId, string memory _baseName, uint _parameter) internal {
         address managed = createManagedContract(_creatorUserId, _baseName, _parameter);
         address zoned = createZonedContract(_creatorUserId, _baseName, _parameter);
-        
-        console.log("createChildContract, baseName: ", _baseName);
     }
 
     // Function for routing commands by contract name
@@ -278,13 +265,10 @@ constructor(
             tokenAddrForChildCall = _tokenaddress; // Use actual token address for ERC20
         }
         
-        console.log("reward - Starting address lookup");
         string memory managedName = string.concat(name, "_managed");
         string memory zonedName = string.concat(name, "_zoned");
         address managedAddress = contractsByType[managedName];
         address zonedAddress = contractsByType[zonedName];
-        console.log("  found managedAddress:", managedAddress);
-        console.log("  found zonedAddress:", zonedAddress);
         
         require(managedAddress != address(0), "Managed contract address not set");
         require(zonedAddress != address(0), "Zoned contract address not set");
@@ -299,36 +283,28 @@ constructor(
              managedAmount += (_tokenamount - calculatedTotal);
         }
 
-        console.log("  Total Amount:", _tokenamount);
-        console.log("  Managed Share:", managedAmount);
-        console.log("  Zoned Share:", zonedAmount);
-
         bool success;
         bytes memory callData; // For low-level calls
 
         // --- Start: Forward Funds & Emit ---
         if (etherreward) {
             if (managedAmount > 0) {
-                console.log("  Forwarding ETH to Managed:", managedAmount);
                 (success, ) = payable(managedAddress).call{value: managedAmount}("");
                 require(success, "ETH transfer to Managed failed");
                 emit FundsForwarded(managedAddress, address(0), managedAmount); // ETH uses address(0)
             }
             if (zonedAmount > 0) {
-                 console.log("  Forwarding ETH to Zoned:", zonedAmount);
                 (success, ) = payable(zonedAddress).call{value: zonedAmount}("");
                 require(success, "ETH transfer to Zoned failed");
                 emit FundsForwarded(zonedAddress, address(0), zonedAmount); // ETH uses address(0)
             }
         } else {
             if (managedAmount > 0) {
-                console.log("  Forwarding ERC20 to Managed:", managedAmount);
                 success = token.transfer(managedAddress, managedAmount);
                 require(success, "ERC20 transfer to Managed failed");
                 emit FundsForwarded(managedAddress, _tokenaddress, managedAmount);
             }
              if (zonedAmount > 0) {
-                console.log("  Forwarding ERC20 to Zoned:", zonedAmount);
                 success = token.transfer(zonedAddress, zonedAmount);
                 require(success, "ERC20 transfer to Zoned failed");
                 emit FundsForwarded(zonedAddress, _tokenaddress, zonedAmount);
@@ -341,7 +317,6 @@ constructor(
         if (managedAmount > 0) {
             if (!etherreward) {
                 // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Managed Contract with token amount:", managedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, managedAmount);
                 (success, ) = managedAddress.call(callData);
                 require(success, "Call to Managed reward failed");
@@ -352,7 +327,6 @@ constructor(
         if (zonedAmount > 0) {
             if (!etherreward) {
                 // Only call reward() for ERC20 tokens
-                console.log("  Calling reward on Zoned Contract with token amount:", zonedAmount);
                 callData = abi.encodeWithSignature("reward(address,uint256)", tokenAddrForChildCall, zonedAmount);
                 (success, ) = zonedAddress.call(callData);
                 require(success, "Call to Zoned reward failed");

@@ -16,8 +16,8 @@ pragma solidity ^0.8;
     Peer Production License for more details.
  */
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -25,7 +25,7 @@ import "./IHolonFactory.sol";
 import "./MembraneUpgradeable.sol";
 
 abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
      //======================== Public holon variables
     string public name;                      //The name of the holon
@@ -143,7 +143,7 @@ abstract contract HolonUpgradeable is Initializable, MembraneUpgradeable, UUPSUp
     }
 
     function distributeERC20(address _tokenAddress, uint256 _tokenAmount) private {
-        IERC20 token = IERC20(_tokenAddress);
+        IERC20Upgradeable token = IERC20Upgradeable(_tokenAddress);
         require(token.balanceOf(address(this)) >= _tokenAmount, "Not enough tokens in the contract");
 
         uint256 amountPerMember = _tokenAmount / _members.length;

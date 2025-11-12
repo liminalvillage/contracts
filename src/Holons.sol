@@ -15,7 +15,6 @@ pragma solidity ^0.8;
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     Peer Production License for more details.
  */
-import "forge-std/console.sol";
 import "./SplitterFactory.sol";
 
 contract Holons {
@@ -52,38 +51,30 @@ contract Holons {
     function newHolon(string memory _flavor, string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
         require(flavors[_flavor] != address(0), "Flavor with this name does not exist");
         address flavorAddress = flavors[_flavor];
-        console.log("newHolon: Found flavor", _flavor, "at address:", uint256(uint160(flavorAddress)));
-        
-        console.log("newHolon: Calling delegatecall on flavorAddress with parameters:", _name, _parameter);
+
         (bool success, bytes memory result) = flavorAddress.delegatecall(
             abi.encodeWithSignature("newHolon(string,string,uint256,address,address)", _creatorUserId, _name, _parameter, managedFactory, zonedFactory)
         );
-        console.log("newHolon: Delegatecall completed. Success:", success);
         require(success, "Holon creation failed");
-        
+
         address holonAddress = abi.decode(result, (address));
-        console.log("newHolon: Holon created with name:", _name, "at address:", uint256(uint160(holonAddress)));
         toAddress[_name] = holonAddress;
         emit NewHolon(_name, holonAddress);
-        
+
         return holonAddress;
     }
     function newHolonBundle(string memory _creatorUserId, string memory _name, uint _parameter) public returns (address) {
-        console.log("Holons.newHolonBundle: Started for name:", _name);
-
         string memory _flavor = "Splitter";
         address flavorAddress = flavors[_flavor];
-        console.log("Holons.newHolonBundle: Using SplitterFactory at:", flavorAddress);
         require(flavorAddress != address(0), "SplitterFactory not set");
-        
+
         // Direct call instead of delegatecall
         SplitterFactory factory = SplitterFactory(flavorAddress);
         address splitterAddress = factory.createSplitter(_creatorUserId, _name, _parameter, managedFactory, zonedFactory);
-        
+
         // Store address in our own mapping
         toAddress[_name] = splitterAddress;
-        console.log("Holons.newHolonBundle: Updated toAddress mapping:", toAddress[_name]);
-        
+
         emit NewHolon(_name, splitterAddress);
         return splitterAddress;
     }

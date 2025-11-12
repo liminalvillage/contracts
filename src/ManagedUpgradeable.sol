@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8;
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "v3-core/contracts/libraries/FullMath.sol";
-import "forge-std/console.sol";
 
 /*
     Copyright 2020, Roberto Valenti
@@ -24,7 +23,7 @@ import "./IHolonFactory.sol";
 import "./HolonUpgradeable.sol";
 
 contract ManagedUpgradeable is HolonUpgradeable {
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     string[] public userIds; // list of userIds
     mapping(string => address) public userIdToAddress; // mapping for userIds to addresses
     mapping(string => bool) public hasClaimed; // mapping to track if userId has already claimed
@@ -53,7 +52,6 @@ contract ManagedUpgradeable is HolonUpgradeable {
         totalappreciation = 0;
         flavor = "Managed";
         maxAppreciation = 1e30;
-        console.log("ManagedUpgradeable.initialize: Set owner to creator with address: ", _creator);
     }
 
     // Only the creator can add members
@@ -127,7 +125,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
         address _tokenAddress,
         uint256 _amount
     ) external {
-        IERC20 token = IERC20(_tokenAddress);
+        IERC20Upgradeable token = IERC20Upgradeable(_tokenAddress);
         //require(token.transferFrom(msg.sender, address(this), _amount), "Token transfer failed");
 
         // Debugging purposes;
@@ -176,7 +174,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
         // Loop through all tokens and transfer to user
         address[] memory tokens = tokensOf[_userId];
         for (uint i = 0; i < tokensOf[_userId].length; i++) {
-            IERC20 token = IERC20(tokens[i]);
+            IERC20Upgradeable token = IERC20Upgradeable(tokens[i]);
             uint256 amount = tokenBalance[_userId][tokens[i]];
             if (amount > 0) {
                 tokenBalance[_userId][tokens[i]] = 0;
@@ -187,74 +185,45 @@ contract ManagedUpgradeable is HolonUpgradeable {
     }
     // reward function to reward all members through their user id
     function reward(address _tokenaddress, uint256 _tokenamount) public payable override nonReentrant {
-        console.log(">>> ManagedUpgradeable.reward: Entered");
-        console.log("_tokenaddress:", _tokenaddress);
-        console.log("_tokenamount (initial):", _tokenamount);
-        console.log("msg.value:", msg.value);
-        console.log("address(this):", address(this));
-
         bool etherreward;
-        IERC20 token;
+        IERC20Upgradeable token;
 
         if (msg.value > 0 && _tokenaddress == address(0)) {
-            console.log("--- ManagedUpgradeable.reward: ETH path selected ---");
             _tokenamount = msg.value; // Amount is now msg.value
             etherreward = true;
-            console.log("    _tokenamount (updated for ETH):", _tokenamount);
         } else {
-            console.log("--- ManagedUpgradeable.reward: ERC20 path selected ---");
-            console.log("ERC20 token address:", _tokenaddress);
-            token = IERC20(_tokenaddress);
+            token = IERC20Upgradeable(_tokenaddress);
             etherreward = false;
             uint256 currentBalance = token.balanceOf(address(this));
             uint256 deposited = totalDeposited[_tokenaddress];
-            console.log("Checking token balance: currentBalance =", currentBalance);
-            console.log("Total deposited: ", deposited);
-            console.log("Token amount:", _tokenamount);
 
             require(
                 currentBalance - deposited >= _tokenamount, // Keep original logic
                 "Not enough tokens in the contract"
             );
-             console.log("Token balance check passed.");
         }
 
         uint256 amount;
-        console.log("--- ManagedUpgradeable.reward: Starting user loop ---");
-        console.log("Number of userIds:", userIds.length);
-        console.log("Total appreciation:", totalappreciation);
 
         for (uint256 i = 0; i < userIds.length; i++) {
             string memory currentUserId = userIds[i];
-            console.log("Loop", i, "- Processing userId:", currentUserId);
 
             if (totalappreciation > 0) {
-                console.log("Calculating amount based on appreciation.");
                 uint256 userAppreciation = appreciation[currentUserId];
-                console.log("User appreciation:", userAppreciation);
                 amount = FullMath.mulDiv(userAppreciation, _tokenamount, totalappreciation);
-                console.log("Calculated amount:", amount);
             } else {
-                console.log("Calculating amount based on even split.");
                 require(userIds.length > 0, "ManagedUpgradeable.reward: Division by zero users (should not happen here)"); // Keep original check
                 amount = _tokenamount / userIds.length;
-                console.log("    Calculated amount:", amount);
             }
 
             if (amount > 0) {
-                console.log("Amount > 0. Processing distribution.");
                 address recipient = userIdToAddress[currentUserId];
-                 console.log("Recipient address (from mapping):", recipient);
                 // Note: recipient will be address(0) if user hasn't claimed yet
                 bool isContract = recipient.code.length > 0;
-                console.log("Is recipient a contract?", isContract);
-                bool claimed = hasClaimed[currentUserId];
-                console.log("Has user claimed?", claimed);
 
 
                 if (etherreward) { // Ether case
                     if (hasClaimed[userIds[i]]) {
-                        console.log("Ether reward user has claimed.");
                         (bool success, ) = payable(recipient).call{value: amount}("");
                         require(success, "Transfer failed");
 
@@ -267,7 +236,6 @@ contract ManagedUpgradeable is HolonUpgradeable {
                         );
                     } else {
                         this.depositEtherForUser(userIds[i], amount);
-                        console.log("Ether reward user has not claimed.");
                         emit MemberRewarded(
                             address(this),
                             address(0),
@@ -278,7 +246,6 @@ contract ManagedUpgradeable is HolonUpgradeable {
                     }
                 } else { // ERC20 case
                     if (hasClaimed[userIds[i]]) {
-                        console.log("ERC20 reward user has claimed.");
                         token.safeTransfer(recipient, amount);
                         (bool success, ) = recipient.call(
                             abi.encodeWithSignature(
@@ -297,7 +264,6 @@ contract ManagedUpgradeable is HolonUpgradeable {
                             "ERC20"
                         );
                     } else {
-                        console.log("ERC20 reward user has not claimed.");
                         this.depositTokenForUser(userIds[i], _tokenaddress, amount);
 
                         emit MemberRewarded(
