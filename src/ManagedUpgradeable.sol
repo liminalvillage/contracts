@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8;
 
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/libraries/FullMath.sol";
 
 /*
@@ -23,7 +23,7 @@ import "./IHolonFactory.sol";
 import "./HolonUpgradeable.sol";
 
 contract ManagedUpgradeable is HolonUpgradeable {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for IERC20;
     string[] public userIds; // list of userIds
     mapping(string => address) public userIdToAddress; // mapping for userIds to addresses
     mapping(string => bool) public hasClaimed; // mapping to track if userId has already claimed
@@ -125,7 +125,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
         address _tokenAddress,
         uint256 _amount
     ) external {
-        IERC20Upgradeable token = IERC20Upgradeable(_tokenAddress);
+        IERC20 token = IERC20(_tokenAddress);
         //require(token.transferFrom(msg.sender, address(this), _amount), "Token transfer failed");
 
         // Debugging purposes;
@@ -174,7 +174,7 @@ contract ManagedUpgradeable is HolonUpgradeable {
         // Loop through all tokens and transfer to user
         address[] memory tokens = tokensOf[_userId];
         for (uint i = 0; i < tokensOf[_userId].length; i++) {
-            IERC20Upgradeable token = IERC20Upgradeable(tokens[i]);
+            IERC20 token = IERC20(tokens[i]);
             uint256 amount = tokenBalance[_userId][tokens[i]];
             if (amount > 0) {
                 tokenBalance[_userId][tokens[i]] = 0;
@@ -186,13 +186,13 @@ contract ManagedUpgradeable is HolonUpgradeable {
     // reward function to reward all members through their user id
     function reward(address _tokenaddress, uint256 _tokenamount) public payable override nonReentrant {
         bool etherreward;
-        IERC20Upgradeable token;
+        IERC20 token;
 
         if (msg.value > 0 && _tokenaddress == address(0)) {
             _tokenamount = msg.value; // Amount is now msg.value
             etherreward = true;
         } else {
-            token = IERC20Upgradeable(_tokenaddress);
+            token = IERC20(_tokenaddress);
             etherreward = false;
             uint256 currentBalance = token.balanceOf(address(this));
             uint256 deposited = totalDeposited[_tokenaddress];
