@@ -22,3 +22,31 @@ skip = [
     "src/Migrations.sol", "src/Resource*.sol", "src/Splitter*.sol", "src/Zoned*.sol",
     "test/v1/**", "test/v2/**", "test/v3/Splitter.t.sol", "script/**",
 ]
+
+# What CI runs (`FOUNDRY_PROFILE=ci` in .github/workflows/test.yml): the
+# same scope as `bundle`, because the legacy contracts do not build on any
+# 0.8.x solc and never have in CI.
+[profile.ci]
+solc = "0.8.20"
+optimizer = true
+optimizer_runs = 200
+evm_version = "shanghai"
+skip = [
+    "src/Appreciative*.sol", "src/Crown.sol", "src/Geospatial*.sol", "src/Holon.sol",
+    "src/Holons.sol", "src/I*.sol", "src/Managed*.sol", "src/Membrane.sol",
+    "src/Migrations.sol", "src/Resource*.sol", "src/Splitter*.sol", "src/Zoned*.sol",
+    "test/v1/**", "test/v2/**", "test/v3/Splitter.t.sol", "script/**",
+]
+
+[fmt]
+# The legacy tree predates `forge fmt` and is not built by CI; Bundle.sol is
+# kept byte-identical to the source Sourcify verified against the Sepolia
+# deployment (0xdA20c942FE60dC6bb7E9cfa3297bEad815ec275F) — reformatting it
+# would change the metadata hash and demote that exact match. New files are
+# formatted; run `forge fmt test/v3/BundleCascade.t.sol` before committing.
+ignore = [
+    "src/Appreciative*.sol", "src/Bundle.sol", "src/Crown.sol", "src/Geospatial*.sol",
+    "src/Holon.sol", "src/Holons.sol", "src/I*.sol", "src/lib/**", "src/Managed*.sol", "src/Membrane.sol",
+    "src/Migrations.sol", "src/Resource*.sol", "src/Splitter*.sol", "src/TestToken.sol",
+    "src/Zoned*.sol", "test/v1/**", "test/v2/**", "test/v3/Splitter.t.sol", "script/**",
+]

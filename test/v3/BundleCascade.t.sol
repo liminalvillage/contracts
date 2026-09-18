@@ -45,11 +45,7 @@ contract BundleCascadeTest is Test {
         uint256 cascadeCount
     );
     event PushFailed(
-        address indexed contractAddress,
-        string userId,
-        address indexed recipient,
-        address tokenAddress,
-        uint256 amount
+        address indexed contractAddress, string userId, address indexed recipient, address tokenAddress, uint256 amount
     );
 
     function setUp() public {
@@ -99,7 +95,7 @@ contract BundleCascadeTest is Test {
 
     function test_claim_ownerBindsAndSweeps() public {
         vm.prank(funder);
-        (bool ok, ) = address(parent).call{value: 2 ether}("");
+        (bool ok,) = address(parent).call{value: 2 ether}("");
         assertTrue(ok);
         assertEq(parent.etherBalance("alice"), 1 ether);
         assertEq(parent.totalEtherDeposited(), 2 ether);
