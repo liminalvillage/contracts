@@ -39,6 +39,23 @@ pragma solidity 0.8.20;
     Election internals were not observable on-chain and are reconstructed to
     match the ABI with sensible semantics (per-round state, winner takes
     ownership when a wallet is bound).
+
+    GUARDED CLAIM (2026-09-18) — behavioral changes vs. the 2026-08-30 build:
+      * claim() is no longer open: only the owner or the wallet already bound
+        to that member id may call it, and it may be called again — that is
+        how a member (or the owner) re-binds. The first caller can no longer
+        take a member's share for good.
+      * A push that fails no longer reverts the whole distribution: ETH that
+        cannot be delivered is stored for a later claim; an ERC-20 cascade
+        call that fails leaves the tokens at the recipient, where anyone can
+        retry it through reward(). A broken member cannot brick its holon.
+      * reward(address(0), n) without value used to move `n` of the
+        contract's ETH — including members' unclaimed balances — out through
+        the split. ETH is now checked against stored balances like tokens.
+      * Elections: nominate/vote need the owner or the member's bound wallet,
+        and a contract-bound member can neither run nor become owner (a
+        Bundle owning a Bundle could never call syncAll again).
+      * addMember(s) are owner-only; transferOwnership() exists.
     ---------------------------------------------------------------------------
 
     A Bundle is a self-contained holon treasury: incoming value is split
@@ -82,6 +99,8 @@ contract Bundle is ReentrancyGuard {
     mapping(string => mapping(address => uint256)) public tokenBalance;
     mapping(string => address[]) public tokensOf;
     mapping(address => uint256) public totalDeposited;
+    /// @dev ETH held for unbound members; everything above it is distributable.
+    uint256 public totalEtherDeposited;
 
     //======================== Interior (contribution split)
     string[] public interiorMembers;
@@ -156,6 +175,11 @@ contract Bundle is ReentrancyGuard {
         address addedBy
     );
     event MemberAssignedToZone(string userId, uint256 zoneNumber);
+    event MemberBound(
+        string userId,
+        address indexed previousBeneficiary,
+        address indexed beneficiary
+    );
     event MemberRemovedFromZone(string userId);
     event MemberRewarded(
         address indexed from,
@@ -167,6 +191,16 @@ contract Bundle is ReentrancyGuard {
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
+    );
+    /// @notice A bound recipient refused a push. ETH was stored for a later
+    ///         claim; ERC-20 sits at the recipient, whose reward() anyone
+    ///         may call again.
+    event PushFailed(
+        address indexed contractAddress,
+        string userId,
+        address indexed recipient,
+        address tokenAddress,
+        uint256 amount
     );
     event RewardDistributed(
         address indexed contractAddress,
@@ -186,6 +220,17 @@ contract Bundle is ReentrancyGuard {
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    /// @dev The owner, or the wallet a member id is already bound to. The
+    ///      owner already decides every share, so binding adds no power.
+    modifier onlyOwnerOrBound(string memory _userId) {
+        address bound = userIdToAddress[_userId];
+        require(
+            msg.sender == owner || (bound != address(0) && msg.sender == bound),
+            "Not authorized"
+        );
         _;
     }
 
@@ -214,11 +259,11 @@ contract Bundle is ReentrancyGuard {
     //                      Membrane
     //=============================================================
 
-    function addMember(string memory _userId) external {
+    function addMember(string memory _userId) external onlyOwner {
         _addMember(_userId);
     }
 
-    function addMembers(string[] memory _userIds) external {
+    function addMembers(string[] memory _userIds) external onlyOwner {
         for (uint256 i = 0; i < _userIds.length; i++) {
             _addMember(_userIds[i]);
         }
@@ -234,6 +279,12 @@ contract Bundle is ReentrancyGuard {
 
     function getSize() external view returns (uint256) {
         return userIds.length;
+    }
+
+    function transferOwnership(address _newOwner) external onlyOwner {
+        require(_newOwner != address(0), "Invalid owner");
+        emit OwnershipTransferred(owner, _newOwner);
+        owner = _newOwner;
     }
 
     function getTokensOf(
@@ -455,7 +506,13 @@ contract Bundle is ReentrancyGuard {
         bool etherreward = _tokenaddress == address(0);
         if (_tokenamount == 0) return;
 
-        if (!etherreward) {
+        // only what is not held for an unbound member may be distributed
+        if (etherreward) {
+            require(
+                address(this).balance - totalEtherDeposited >= _tokenamount,
+                "Not enough ether in the contract"
+            );
+        } else {
             IERC20 token = IERC20(_tokenaddress);
             require(
                 token.balanceOf(address(this)) - totalDeposited[_tokenaddress] >=
@@ -528,7 +585,9 @@ contract Bundle is ReentrancyGuard {
 
     /// @dev Push to a bound recipient (cascading into contracts), or store
     ///      for later claim. Returns true when the delivery cascaded into a
-    ///      contract recipient.
+    ///      contract recipient. A refused push is stored (ETH) or left at the
+    ///      recipient (ERC-20) rather than reverting: one broken member must
+    ///      not stop the whole holon from being paid.
     function _deliver(
         string memory _userId,
         address _tokenaddress,
@@ -540,9 +599,15 @@ contract Bundle is ReentrancyGuard {
         bool isContract = recipient.code.length > 0;
 
         if (hasClaimed[_userId] && recipient != address(0)) {
+            bool cascaded = false;
             if (_etherreward) {
                 (bool success, ) = payable(recipient).call{value: _amount}("");
-                require(success, "Transfer failed");
+                if (!success) {
+                    emit PushFailed(address(this), _userId, recipient, _tokenaddress, _amount);
+                    _store(_userId, _tokenaddress, _amount, _etherreward, _distributionType);
+                    return false;
+                }
+                cascaded = isContract;
                 emit MemberRewarded(
                     address(this),
                     recipient,
@@ -554,14 +619,10 @@ contract Bundle is ReentrancyGuard {
                 IERC20(_tokenaddress).safeTransfer(recipient, _amount);
                 if (isContract) {
                     // federation cascade: ask the member holon to re-distribute
-                    (bool success, ) = recipient.call(
-                        abi.encodeWithSignature(
-                            "reward(address,uint256)",
-                            _tokenaddress,
-                            _amount
-                        )
-                    );
-                    require(success, "Unable to call the reward function");
+                    cascaded = _callReward(recipient, _tokenaddress, _amount);
+                    if (!cascaded) {
+                        emit PushFailed(address(this), _userId, recipient, _tokenaddress, _amount);
+                    }
                 }
                 emit MemberRewarded(
                     address(this),
@@ -579,12 +640,40 @@ contract Bundle is ReentrancyGuard {
                 _tokenaddress,
                 _amount
             );
-            return isContract;
+            return cascaded;
         }
 
-        // unbound member: store for a later claim
+        _store(_userId, _tokenaddress, _amount, _etherreward, _distributionType);
+        return false;
+    }
+
+    /// @dev Ask a contract recipient to re-distribute what it was just sent.
+    function _callReward(
+        address _recipient,
+        address _tokenaddress,
+        uint256 _amount
+    ) internal returns (bool) {
+        (bool success, ) = _recipient.call(
+            abi.encodeWithSignature(
+                "reward(address,uint256)",
+                _tokenaddress,
+                _amount
+            )
+        );
+        return success;
+    }
+
+    /// @dev Hold a member's share until it is claimed.
+    function _store(
+        string memory _userId,
+        address _tokenaddress,
+        uint256 _amount,
+        bool _etherreward,
+        string memory _distributionType
+    ) internal {
         if (_etherreward) {
             etherBalance[_userId] += _amount;
+            totalEtherDeposited += _amount;
             emit MemberRewarded(
                 address(this),
                 address(0),
@@ -614,31 +703,38 @@ contract Bundle is ReentrancyGuard {
             _amount,
             _distributionType
         );
-        return false;
     }
 
     //=============================================================
     //                      Claims
     //=============================================================
 
-    /// @notice Pay out a member's stored balances and bind their wallet.
-    ///         The first claim registers `_beneficiary` as the member's
-    ///         address; future rewards are pushed there directly (a contract
-    ///         beneficiary makes the member a cascading sub-holon).
+    /// @notice Bind a member's wallet and pay out their stored balances.
+    ///         Future rewards are pushed to `_beneficiary` directly; a
+    ///         contract beneficiary makes the member a cascading sub-holon.
+    ///         Only the owner or the wallet already bound to `_userId` may
+    ///         call this, and calling it again re-binds — a member can move
+    ///         their share to a new wallet, and the owner can free a share
+    ///         from a recipient that refuses it. Unlike a distribution, the
+    ///         payout here must succeed: a beneficiary that cannot take it
+    ///         is rejected at binding time.
     function claim(
         string memory _userId,
         address _beneficiary
-    ) external nonReentrant {
-        require(!hasClaimed[_userId], "User has already claimed");
+    ) external nonReentrant onlyOwnerOrBound(_userId) {
+        require(isBundleMember[_userId], "Not a member");
         require(_beneficiary != address(0), "Invalid beneficiary address");
-        if (userIdToAddress[_userId] == address(0)) {
+        address previous = userIdToAddress[_userId];
+        if (previous != _beneficiary) {
             userIdToAddress[_userId] = _beneficiary;
+            emit MemberBound(_userId, previous, _beneficiary);
         }
         hasClaimed[_userId] = true;
 
         uint256 amount = etherBalance[_userId];
         if (amount > 0) {
             etherBalance[_userId] = 0;
+            totalEtherDeposited -= amount;
             (bool sent, ) = _beneficiary.call{value: amount}("");
             require(sent, "Claiming Ether failed");
             emit FundsClaimed(
@@ -658,6 +754,13 @@ contract Bundle is ReentrancyGuard {
                 tokenBalance[_userId][tokens[i]] = 0;
                 totalDeposited[tokens[i]] -= tokenAmount;
                 IERC20(tokens[i]).safeTransfer(_beneficiary, tokenAmount);
+                if (_beneficiary.code.length > 0) {
+                    // a sub-holon divides what it was just handed
+                    require(
+                        _callReward(_beneficiary, tokens[i], tokenAmount),
+                        "Beneficiary refused the cascade"
+                    );
+                }
                 emit FundsClaimed(
                     address(this),
                     name,
@@ -688,16 +791,22 @@ contract Bundle is ReentrancyGuard {
         emit ElectionCancelled();
     }
 
-    function nominateSelf(string memory _userId) external {
+    function nominateSelf(
+        string memory _userId
+    ) external onlyOwnerOrBound(_userId) {
         require(electionActive, "No active election");
         require(isBundleMember[_userId], "Not a member");
+        require(_canOwn(_userId), "A contract cannot own the Bundle");
         require(!_isCandidate[electionRound][_userId], "Already nominated");
         _isCandidate[electionRound][_userId] = true;
         candidates.push(_userId);
         emit CandidateNominated(_userId);
     }
 
-    function vote(string memory _voterId, string memory _candidateId) external {
+    function vote(
+        string memory _voterId,
+        string memory _candidateId
+    ) external onlyOwnerOrBound(_voterId) {
         require(electionActive, "No active election");
         require(isBundleMember[_voterId], "Not a member");
         require(_isCandidate[electionRound][_candidateId], "Not a candidate");
@@ -725,11 +834,21 @@ contract Bundle is ReentrancyGuard {
         electionActive = false;
         emit ElectionFinalized(winner, winnerVotes);
 
+        // the binding may have moved since nomination: a contract never owns
         address newOwner = userIdToAddress[winner];
-        if (newOwner != address(0) && newOwner != owner) {
+        if (newOwner != address(0) && newOwner != owner && _canOwn(winner)) {
             emit OwnershipTransferred(owner, newOwner);
             owner = newOwner;
         }
+    }
+
+    /// @dev A Bundle owned by another Bundle could never be configured
+    ///      again (a contract cannot call syncAll), so a member whose bound
+    ///      wallet is a contract may not be elected. Unbound members have no
+    ///      wallet to hand ownership to and are refused at nomination too.
+    function _canOwn(string memory _userId) internal view returns (bool) {
+        address bound = userIdToAddress[_userId];
+        return bound != address(0) && bound.code.length == 0;
     }
 
     function getCandidates() external view returns (string[] memory) {

@@ -7,3 +7,18 @@ remappings = [
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+# Bundle in isolation: the rest of src/ imports uniswap v3-core, which no
+# longer compiles on 0.8.x. `FOUNDRY_PROFILE=bundle forge test` covers
+# Bundle.sol and its tests with the settings the Sepolia artifact was built with.
+[profile.bundle]
+solc = "0.8.20"
+optimizer = true
+optimizer_runs = 200
+evm_version = "shanghai"
+skip = [
+    "src/Appreciative*.sol", "src/Crown.sol", "src/Geospatial*.sol", "src/Holon.sol",
+    "src/Holons.sol", "src/I*.sol", "src/Managed*.sol", "src/Membrane.sol",
+    "src/Migrations.sol", "src/Resource*.sol", "src/Splitter*.sol", "src/Zoned*.sol",
+    "test/v1/**", "test/v2/**", "test/v3/Splitter.t.sol", "script/**",
+]
