@@ -487,4 +487,47 @@ contract PotTest is Test {
         vm.expectRevert();
         pot.setSigners(next, 1);
     }
+
+    //=============================================================
+    //              Cross-check with @holons/core rights-tree
+    //=============================================================
+
+    /// The table `advanceRights` cuts for shares alice 50 / bob 30 / carol 20
+    /// over 1000 EVO (at 0xee..ee) and 7 wei of ETH, as core's `rightsRoot`
+    /// and `rightsProof` encode it (packages/core/src/flows/rights-tree.ts).
+    function test_vector_coreTableVerifiesOnChain() public {
+        address evo = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+        vm.etch(evo, address(token).code);
+        deal(evo, address(pot), 1000);
+        pot.sweep(evo);
+        fundEth(7);
+
+        bytes32 root = 0xbb6fe7f4dcfb874d36b952e88ac50a66a2e8253c955c923d4c090fc9d72153ed;
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(0);
+        tokens[1] = evo;
+        uint256[] memory totals = new uint256[](2);
+        totals[0] = 7;
+        totals[1] = 1000;
+        bytes32 digest = pot.rootDigest(84, root, bytes32(0), tokens, totals);
+        pot.postRoot(84, root, bytes32(0), tokens, totals, quorum(digest));
+        vm.warp(block.timestamp + CHALLENGE);
+
+        bytes32[] memory aliceEvo = new bytes32[](2);
+        aliceEvo[0] = 0xf7ead572a2c76424bc42208d09c879e5da9f74616f97d2605af45e2cdbe2baaf;
+        aliceEvo[1] = 0x9ed381e4509db13b70c2a3263805a10aa9591b41c8f7a6904b5f902d44d51cb3;
+        pot.claim("alice", address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa), evo, 500, aliceEvo);
+        assertEq(TestToken(evo).balanceOf(address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa)), 500);
+
+        bytes32[] memory bobEth = new bytes32[](3);
+        bobEth[0] = 0x925f71935d16f39e6edcad50ef7dc42c11103235af204e6f0f8e2b2fc81e496c;
+        bobEth[1] = 0x47f873f7a02b6b4ad0b8abf203c2323656cfdc0119612808392a6878c86fe219;
+        bobEth[2] = 0x7721571fde35e4e192c47fba499d04afd7fe59d6f3d4f3428085333b225a4dd1;
+        pot.claim("bob", address(0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB), address(0), 2, bobEth);
+        assertEq(address(0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB).balance, 2);
+
+        // the same proof does not carry a different amount
+        vm.expectRevert("Not in the table");
+        pot.claim("bob", address(0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB), address(0), 3, bobEth);
+    }
 }
